@@ -3,68 +3,13 @@
 #include "RenderHandler.hpp"
 #include <include/cef_app.h>
 #include <cassert>
-#include <iostream>
-#include <algorithm>
-
-bool WebCoreManager::setUp(/*int argc, char** argv*/)
-{
-    CefMainArgs args/*(argc, argv)*/;
-    int exit_code = CefExecuteProcess(args, nullptr, nullptr);
-    if (exit_code >= 0)
-    {
-        std::cerr << "CefExecuteProcess: failed" << std::endl;
-        return false;
-    }
-
-    CefSettings settings;
-    // TODO CefString(&settings.locales_dir_path) = "cef/linux/lib/locales";
-    bool result = CefInitialize(args, settings, nullptr, nullptr);
-    if (!result)
-    {
-        std::cerr << "CefInitialize: failed" << std::endl;
-        return false;
-    }
-    return true;
-}
-
-void WebCoreManager::shutDown()
-{
-    m_browsers.clear();
-    CefShutdown();
-}
-
-void WebCoreManager::update()
-{
-    CefDoMessageLoopWork();
-}
-
-std::weak_ptr<WebCore> WebCoreManager::createBrowser(const std::string &url)
-{
-    auto web_core = std::make_shared<WebCore>(url);
-    m_browsers.push_back(web_core);
-    return web_core;
-}
-
-void WebCoreManager::removeBrowser(std::weak_ptr<WebCore> web_core)
-{
-    auto elem = web_core.lock();
-    if (elem)
-    {
-        auto found = std::find(m_browsers.begin(), m_browsers.end(), elem);
-        if (found != m_browsers.end())
-        {
-            m_browsers.erase(found);
-        }
-    }
-}
+//#include <iostream>
 
 WebCore::WebCore(const std::string &url)
     : m_mouse_x(0), m_mouse_y(0)
 {
     CefWindowInfo window_info;
     window_info.SetAsWindowless(0);
-    //window_info.SetAsWindowless(nullptr);
-    //window_info.SetTransparentPainting(true);
 
     m_render_handler = new RenderHandler();
     m_render_handler->init();

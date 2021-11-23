@@ -34,19 +34,4 @@ private:
     RenderHandler* m_render_handler = nullptr;
 };
 
-class WebCoreManager
-{
-public:
-
-    void shutDown();
-    bool setUp();
-    void update();
-    std::weak_ptr<WebCore> createBrowser(const std::string &url);
-    void removeBrowser(std::weak_ptr<WebCore> web_core);
-
-private:
-
-    std::vector<std::shared_ptr<WebCore>> m_browsers;
-};
-
 #endif

@@ -2,7 +2,9 @@
 #include "GLCore.hpp"
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
+#include <include/cef_app.h>
 #include <iostream>
+#include <algorithm>
 
 static void reshape_callback(GLFWwindow* window, int w, int h)
 {
@@ -45,10 +47,29 @@ CEFGLWindow::CEFGLWindow(uint32_t const width, uint32_t const height, const char
 
 CEFGLWindow::~CEFGLWindow()
 {
-    m_web_core_manager.removeBrowser(m_web_core);
-    m_web_core_manager.shutDown();
+    m_browsers.clear();
 
     GLCore::deleteProgram(m_prog);
+}
+
+std::weak_ptr<WebCore> CEFGLWindow::createBrowser(const std::string &url)
+{
+    auto web_core = std::make_shared<WebCore>(url);
+    m_browsers.push_back(web_core);
+    return web_core;
+}
+
+void CEFGLWindow::removeBrowser(std::weak_ptr<WebCore> web_core)
+{
+    auto elem = web_core.lock();
+    if (elem)
+    {
+        auto found = std::find(m_browsers.begin(), m_browsers.end(), elem);
+        if (found != m_browsers.end())
+        {
+            m_browsers.erase(found);
+        }
+    }
 }
 
 bool CEFGLWindow::setup()
@@ -68,20 +89,12 @@ bool CEFGLWindow::setup()
 
 bool CEFGLWindow::setupCEF()
 {
-    int exit_code = 0;
-    bool success = m_web_core_manager.setUp();
-    if (!success)
-    {
-        std::cerr << "web_core_manager.setUp failed: " << exit_code << std::endl;
-        return false;
-    }
-
     std::string url = "http://google.com";
-    m_web_core = m_web_core_manager.createBrowser(url);
+    m_web_core = createBrowser(url);
     m_web_core.lock()->reshape(m_width, m_height);
 
     std::string other_url = "https://github.com/Lecrapouille?tab=repositories";
-    m_web_core_other = m_web_core_manager.createBrowser(other_url);
+    m_web_core_other = createBrowser(other_url);
     m_web_core_other.lock()->reshape(m_width, m_height);
 
     return true;
@@ -133,7 +146,7 @@ bool CEFGLWindow::update()
 
 bool CEFGLWindow::updateCEF()
 {
-    //m_web_core_manager.update();
+    CefDoMessageLoopWork();
     return true;
 }
 
@@ -187,10 +200,53 @@ bool CEFGLWindow::updateOpenGL()
     return true;
 }
 
+// Séquence d'initialisation CEF / GL
+// Lors de l'initialisation dans l'ordre CEF -> GL, les problèmes suivants peuvent survenir.
+// * Initialisation du CEF réussie -> Échec de l'initialisation du GL -> Terminer le processus en cours -> Mais le CEF ne s'éteint pas correctement car il revient à un processus séparé
+// Si l'initialisation est effectuée dans l'ordre GL -> CEF, les problèmes suivants peuvent survenir.
+// * CEF crée un sous-processus à l'intérieur.
+// * À moins que CefExecuteProcess ne soit appelé, il est impossible de savoir avec certitude si le processus actuel est un enfant ou un parent.
+// Parmi les deux problèmes, je pensais que vérifier l'identité du processus CEF serait plus gênant, je l'initialise donc dans l'ordre CEF->GL
+static void CEFsetUp(int argc, char** argv)
+{
+    CefMainArgs args(argc, argv);
+    int exit_code = CefExecuteProcess(args, nullptr, nullptr);
+    if (exit_code >= 0)
+    {
+        std::cerr << "CefExecuteProcess: child proccess has endend, so exit" << std::endl;
+        exit(exit_code);
+    }
+    else if (exit_code == -1)
+    {
+        // we are here in the father proccess.
+    }
+
+    CefSettings settings;
+
+    // When generating projects with CMake the CEF_USE_SANDBOX value will be defined
+    // automatically. Pass -DUSE_SANDBOX=OFF to the CMake command-line to disable
+    // use of the sandbox.
+#if !defined(CEF_USE_SANDBOX)
+    settings.no_sandbox = true;
+#endif
+
+    settings.windowless_rendering_enabled = true;
+    // TODO CefString(&settings.locales_dir_path) = "cef/linux/lib/locales";
+    bool result = CefInitialize(args, settings, nullptr, nullptr);
+    if (!result)
+    {
+        std::cerr << "CefInitialize: failed" << std::endl;
+        exit(-2);
+    }
+}
+
 // CEF=/media/data/cef_binary/
 // g++ --std=c++14 -W -Wall -Wextra -Wno-unused-parameter -DCEF_USE_SANDBOX -DNDEBUG -D_FILE_OFFSET_BITS=64 -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -I$CEF -I$CEF/include *.cpp -o cefopengl ./libcef.so ./libcef_dll_wrapper.a `pkg-config --cflags --libs glew --static glfw3`
 int main(int argc, char *argv[])
 {
+    CEFsetUp(argc, argv);
     CEFGLWindow win(640, 480, "CEF OpenGL");
-    return win.start();
+    int res = win.start();
+    CefShutdown();
+    return res;
 }

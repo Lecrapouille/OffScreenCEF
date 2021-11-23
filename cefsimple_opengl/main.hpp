@@ -20,7 +20,9 @@ private:
     bool updateOpenGL();
     bool setupCEF();
     bool updateCEF();
-
+    std::weak_ptr<WebCore> createBrowser(const std::string &url);
+    void removeBrowser(std::weak_ptr<WebCore> web_core);
+    
 private:
 
     // Shader variable locations
@@ -33,7 +35,7 @@ private:
     // CEF
     std::weak_ptr<WebCore> m_web_core;
     std::weak_ptr<WebCore> m_web_core_other;
-    WebCoreManager m_web_core_manager;
+    std::vector<std::shared_ptr<WebCore>> m_browsers;
 };
 
 #endif

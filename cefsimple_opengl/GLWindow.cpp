@@ -8,6 +8,10 @@ static void error_callback(int error, const char* description)
 }
 
 GLWindow::GLWindow(uint32_t const width, uint32_t const height, const char *title)
+  : m_width(width), m_height(height), m_title(title)
+{}
+
+void GLWindow::init()
 {
     // Initialize glfw3
     glfwSetErrorCallback(error_callback);
@@ -22,11 +26,9 @@ GLWindow::GLWindow(uint32_t const width, uint32_t const height, const char *titl
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 
-    m_width = width;
-    m_height = height;
-    m_window = glfwCreateWindow(static_cast<int>(width),
-                                static_cast<int>(height),
-                                title, nullptr, nullptr);
+    m_window = glfwCreateWindow(static_cast<int>(m_width),
+                                static_cast<int>(m_height),
+                                m_title.c_str(), nullptr, nullptr);
     if (!m_window)
     {
         std::cerr << "glfwCreateWindow: failed" << std::endl;
@@ -68,6 +70,8 @@ GLWindow::~GLWindow()
 
 bool GLWindow::start()
 {
+    init();
+
     if (!setup())
         return false;
 
