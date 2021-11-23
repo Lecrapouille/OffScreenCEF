@@ -1,1 +1,14 @@
 *~
+cefsimple_sdl
+cefsimple_opengl
+GPUCache
+locales
+*.pak
+*.so
+*.a
+*.dll
+*.lib
+*.log
+*.dat
+*.json
+*.bin
