@@ -1,6 +1,6 @@
 *~
-cefsimple_sdl
-cefsimple_opengl
+cefsimple_sdl/cefsimple_sdl
+cefsimple_opengl/cefsimple_opengl
 GPUCache
 locales
 *.pak
