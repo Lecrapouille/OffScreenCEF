@@ -73,4 +73,4 @@ You have two binaries:
 - `$CEFSIMPLE_SDL/cefsimple_sdl`
 - `$CEFSIMPLE_GL/cefsimple_opengl`
 
-These applications do not have command lines, you have to edit the code to give your desired page.
+These application do not have command lines, they are opening Google page.

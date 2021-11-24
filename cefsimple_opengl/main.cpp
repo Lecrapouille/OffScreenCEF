@@ -1,57 +1,89 @@
 #include "main.hpp"
 #include "GLCore.hpp"
 
+//------------------------------------------------------------------------------
+//! \brief Callback when the OpenGL base window has been resized. Dispatch this
+//! event to all BrowserView.
+//------------------------------------------------------------------------------
 static void reshape_callback(GLFWwindow* ptr, int w, int h)
 {
     assert(nullptr != ptr);
     CEFGLWindow* window = static_cast<CEFGLWindow*>(glfwGetWindowUserPointer(ptr));
 
-    window->m_web_core.lock()->reshape(w, h);
-    window->m_web_core_other.lock()->reshape(w, h);
-    GLCHECK(glViewport(0, 0, (GLsizei)w, (GLsizei)h));
+    // Send screen size to browsers
+    for (auto it: window->browsers())
+    {
+        it->reshape(w, h);
+    }
 }
 
-static void mouse_callback(GLFWwindow* ptr, int btn, int state, int mods)
+//------------------------------------------------------------------------------
+//! \brief Callback when the mouse has clicked inside the OpenGL base window.
+//! Dispatch this event to all BrowserView.
+//------------------------------------------------------------------------------
+static void mouse_callback(GLFWwindow* ptr, int btn, int state, int /*mods*/)
 {
     assert(nullptr != ptr);
     CEFGLWindow* window = static_cast<CEFGLWindow*>(glfwGetWindowUserPointer(ptr));
 
-    // send mouse click to browser
-    CefBrowserHost::MouseButtonType b = CefBrowserHost::MouseButtonType(btn);
-    window->m_web_core.lock()->mouseClick(b, GLFW_PRESS);
-    window->m_web_core.lock()->mouseClick(b, GLFW_RELEASE);
-    window->m_web_core_other.lock()->mouseClick(b, GLFW_PRESS);
-    window->m_web_core_other.lock()->mouseClick(b, GLFW_RELEASE);
+    // Send mouse click to browsers
+    for (auto it: window->browsers())
+    {
+        it->mouseClick(CefBrowserHost::MouseButtonType(btn), state == GLFW_PRESS);
+    }
 }
 
+//------------------------------------------------------------------------------
+//! \brief Callback when the mouse has been displaced inside the OpenGL base
+//! window. Dispatch this event to all BrowserView.
+//------------------------------------------------------------------------------
 static void motion_callback(GLFWwindow* ptr, double x, double y)
 {
     assert(nullptr != ptr);
     CEFGLWindow* window = static_cast<CEFGLWindow*>(glfwGetWindowUserPointer(ptr));
 
-    // send mouse movement to browser
-    window->m_web_core.lock()->mouseMove((int) x, (int) y);
-    window->m_web_core_other.lock()->mouseMove((int) x, (int) y);
+    // Send mouse movement to browsers
+    for (auto it: window->browsers())
+    {
+        it->mouseMove((int) x, (int) y);
+    }
 }
 
-static void keyboard_callback(GLFWwindow* ptr, int key, int scancode, int action, int mods)
+//------------------------------------------------------------------------------
+//! \brief Callback when the keybaord has been pressed inside the OpenGL base
+//! window. Dispatch this event to all BrowserView.
+//------------------------------------------------------------------------------
+static void keyboard_callback(GLFWwindow* ptr, int key, int /*scancode*/,
+                              int action, int /*mods*/)
 {
     assert(nullptr != ptr);
     CEFGLWindow* window = static_cast<CEFGLWindow*>(glfwGetWindowUserPointer(ptr));
 
-    // send key press to browser
-    window->m_web_core.lock()->keyPress(key, true);
-    window->m_web_core_other.lock()->keyPress(key, true);
+    // Send key press to browsers
+    for (auto it: window->browsers())
+    {
+        it->keyPress(key, (action == GLFW_PRESS));
+    }
 }
 
-RenderHandler::~RenderHandler()
+//------------------------------------------------------------------------------
+BrowserView::RenderHandler::RenderHandler(glm::vec4 const& viewport)
+    : m_viewport(viewport)
+{}
+
+//------------------------------------------------------------------------------
+BrowserView::RenderHandler::~RenderHandler()
 {
+    // Free GPU memory
     GLCore::deleteProgram(m_prog);
+    glDeleteBuffers(1, &m_vbo);
+    glDeleteVertexArrays(1, &m_vao);
 }
 
-bool RenderHandler::init()
+//------------------------------------------------------------------------------
+bool BrowserView::RenderHandler::init()
 {
-    // Dummy texture data - for debugging
+    // Dummy texture data
     const unsigned char data[] = {
         255, 0, 0, 255,
         0, 255, 0, 255,
@@ -59,7 +91,7 @@ bool RenderHandler::init()
         255, 255, 255, 255,
     };
 
-    // Compile shader
+    // Compile vertex and fragment shaders
     m_prog = GLCore::createShaderProgram("shaders/tex.vert", "shaders/tex.frag");
     if (m_prog == 0)
     {
@@ -67,13 +99,15 @@ bool RenderHandler::init()
         return false;
     }
 
-    // Location of shader variables
+    // Get locations of shader variables (attributes and uniforms)
     m_pos_loc = GLCHECK(glGetAttribLocation(m_prog, "position"));
     m_tex_loc = GLCHECK(glGetUniformLocation(m_prog, "tex"));
-    //m_mvp_loc = GLCHECK(glGetUniformLocation(m_prog, "mvp");
+    m_mvp_loc = GLCHECK(glGetUniformLocation(m_prog, "mvp"))
 
+    // Square vertices (texture positions are computed directly inside the shader)
     float coords[] = {-1.0,-1.0,-1.0,1.0,1.0,-1.0,1.0,-1.0,-1.0,1.0,1.0,1.0};
 
+    // See https://learnopengl.com/Getting-started/Textures
     GLCHECK(glGenVertexArrays(1, &m_vao));
     GLCHECK(glBindVertexArray(m_vao));
     GLCHECK(glGenBuffers(1, &m_vbo));
@@ -93,16 +127,32 @@ bool RenderHandler::init()
 
     GLCHECK(glBindBuffer(GL_ARRAY_BUFFER, 0));
     GLCHECK(glBindVertexArray(0));
-    m_initialized = true;
 
-    return false;
+    return true;
 }
 
-void RenderHandler::draw()
+//------------------------------------------------------------------------------
+void BrowserView::RenderHandler::draw(glm::vec4 const& viewport, bool fixed)
 {
+    // Where to paint on the OpenGL window
+    GLCHECK(glViewport(viewport[0],
+                       viewport[1],
+                       GLsizei(viewport[2] * m_width),
+                       GLsizei(viewport[3] * m_height)));
+
+    // Apply a rotation
+    glm::mat4 trans = glm::mat4(1.0f); // Identity matrix
+    if (!fixed)
+    {
+        trans = glm::translate(trans, glm::vec3(0.5f, -0.5f, 0.0f));
+        trans = glm::rotate(trans, (float)glfwGetTime() / 5.0f, glm::vec3(0.0f, 0.0f, 1.0f));
+    }
+
+    // See https://learnopengl.com/Getting-started/Textures
     GLCHECK(glUseProgram(m_prog));
     GLCHECK(glBindVertexArray(m_vao));
 
+    GLCHECK(glUniformMatrix4fv(m_mvp_loc, 1, GL_FALSE, glm::value_ptr(trans)));
     GLCHECK(glBindBuffer(GL_ARRAY_BUFFER, m_vbo));
     GLCHECK(glActiveTexture(GL_TEXTURE0));
     GLCHECK(glBindTexture(GL_TEXTURE_2D, m_tex));
@@ -114,18 +164,49 @@ void RenderHandler::draw()
     GLCHECK(glUseProgram(0));
 }
 
-void RenderHandler::reshape(int w, int h)
+//------------------------------------------------------------------------------
+void BrowserView::RenderHandler::reshape(int w, int h)
 {
     m_width = w;
     m_height = h;
 }
 
-void RenderHandler::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect)
+bool BrowserView::viewport(float x, float y, float w, float h)
 {
-    rect = CefRect(0, 0, m_width, m_height);
+    if (!(x >= 0.0f) && (x < 1.0f))
+        return false;
+
+    if (!(x >= 0.0f) && (y < 1.0f))
+        return false;
+
+    if (!(w > 0.0f) && (w <= 1.0f))
+        return false;
+
+    if (!(h > 0.0f) && (h <= 1.0f))
+        return false;
+
+    if (x + w > 1.0f)
+        return false;
+
+    if (y + h > 1.0f)
+        return false;
+
+    m_viewport[0] = x;
+    m_viewport[1] = y;
+    m_viewport[2] = w;
+    m_viewport[3] = h;
+
+    return true;
 }
 
-void RenderHandler::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType type,
+//------------------------------------------------------------------------------
+void BrowserView::RenderHandler::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect)
+{
+    rect = CefRect(m_viewport[0], m_viewport[1], m_viewport[2] * m_width, m_viewport[3] * m_height);
+}
+
+//------------------------------------------------------------------------------
+void BrowserView::RenderHandler::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType type,
                             const RectList &dirtyRects, const void *buffer,
                             int width, int height)
 {
@@ -136,14 +217,15 @@ void RenderHandler::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType type
     GLCHECK(glBindTexture(GL_TEXTURE_2D, 0));
 }
 
-WebCore::WebCore(const std::string &url)
-    : m_mouse_x(0), m_mouse_y(0)
+//------------------------------------------------------------------------------
+BrowserView::BrowserView(const std::string &url)
+    : m_mouse_x(0), m_mouse_y(0), m_viewport(0.0f, 0.0f, 1.0f, 1.0f)
 {
     CefWindowInfo window_info;
     window_info.SetAsWindowless(0);
 
-    m_render_handler = new RenderHandler();
-    m_render_handler->init();
+    m_render_handler = new RenderHandler(m_viewport);
+    m_initialized = m_render_handler->init();
     m_render_handler->reshape(128, 128); // initial size
 
     CefBrowserSettings browserSettings;
@@ -155,39 +237,43 @@ WebCore::WebCore(const std::string &url)
                                                   nullptr, nullptr);
 }
 
-WebCore::~WebCore()
+//------------------------------------------------------------------------------
+BrowserView::~BrowserView()
 {
-    m_browser->GetHost()->CloseBrowser(true);
     CefDoMessageLoopWork();
+    m_browser->GetHost()->CloseBrowser(true);
 
     m_browser = nullptr;
     m_client = nullptr;
 }
 
-void WebCore::load(const std::string &url)
+//------------------------------------------------------------------------------
+void BrowserView::load(const std::string &url)
 {
-    if ((m_render_handler == nullptr) ||
-        (m_render_handler->m_initialized == false))
-    {
-        m_render_handler->init();
-    }
-
+    assert(m_initialized);
     m_browser->GetMainFrame()->LoadURL(url);
 }
 
-void WebCore::draw()
+//------------------------------------------------------------------------------
+void BrowserView::draw()
 {
     CefDoMessageLoopWork();
-    m_render_handler->draw();
+    m_render_handler->draw(m_viewport, m_fixed);
 }
 
-void WebCore::reshape(int w, int h)
+//------------------------------------------------------------------------------
+void BrowserView::reshape(int w, int h)
 {
     m_render_handler->reshape(w, h);
+    GLCHECK(glViewport(m_viewport[0],
+                       m_viewport[1],
+                       GLsizei(m_viewport[2] * w),
+                       GLsizei(m_viewport[3] * h)));
     m_browser->GetHost()->WasResized();
 }
 
-void WebCore::mouseMove(int x, int y)
+//------------------------------------------------------------------------------
+void BrowserView::mouseMove(int x, int y)
 {
     m_mouse_x = x;
     m_mouse_y = y;
@@ -200,7 +286,8 @@ void WebCore::mouseMove(int x, int y)
     m_browser->GetHost()->SendMouseMoveEvent(evt, mouse_leave);
 }
 
-void WebCore::mouseClick(CefBrowserHost::MouseButtonType btn, bool mouse_up)
+//------------------------------------------------------------------------------
+void BrowserView::mouseClick(CefBrowserHost::MouseButtonType btn, bool mouse_up)
 {
     CefMouseEvent evt;
     evt.x = m_mouse_x;
@@ -210,39 +297,41 @@ void WebCore::mouseClick(CefBrowserHost::MouseButtonType btn, bool mouse_up)
     m_browser->GetHost()->SendMouseClickEvent(evt, btn, mouse_up, click_count);
 }
 
-void WebCore::keyPress(int key, bool pressed)
+//------------------------------------------------------------------------------
+void BrowserView::keyPress(int key, bool pressed)
 {
-    //TODO ???
-    // test page http://javascript.info/tutorial/keyboard-events
     CefKeyEvent evt;
-    //event.native_key_code = key;
-    //event.type = pressed ? KEYEVENT_KEYDOWN : KEYEVENT_KEYUP;
     evt.character = key;
     evt.native_key_code = key;
-    evt.type = KEYEVENT_CHAR;
+    evt.type = pressed ? KEYEVENT_CHAR : KEYEVENT_KEYUP;
 
     m_browser->GetHost()->SendKeyEvent(evt);
 }
 
+//------------------------------------------------------------------------------
 CEFGLWindow::CEFGLWindow(uint32_t const width, uint32_t const height, const char *title)
     : GLWindow(width, height, title)
 {
-//std::cout << __PRETTY_FUNCTION__ << std::endl;
+    std::cout << __PRETTY_FUNCTION__ << std::endl;
 }
 
+//------------------------------------------------------------------------------
 CEFGLWindow::~CEFGLWindow()
 {
     m_browsers.clear();
+    CefShutdown();
 }
 
-std::weak_ptr<WebCore> CEFGLWindow::createBrowser(const std::string &url)
+//------------------------------------------------------------------------------
+std::weak_ptr<BrowserView> CEFGLWindow::createBrowser(const std::string &url)
 {
-    auto web_core = std::make_shared<WebCore>(url);
+    auto web_core = std::make_shared<BrowserView>(url);
     m_browsers.push_back(web_core);
     return web_core;
 }
 
-void CEFGLWindow::removeBrowser(std::weak_ptr<WebCore> web_core)
+//------------------------------------------------------------------------------
+void CEFGLWindow::removeBrowser(std::weak_ptr<BrowserView> web_core)
 {
     auto elem = web_core.lock();
     if (elem)
@@ -255,16 +344,28 @@ void CEFGLWindow::removeBrowser(std::weak_ptr<WebCore> web_core)
     }
 }
 
+//------------------------------------------------------------------------------
 bool CEFGLWindow::setup()
 {
-    // CEF
-    std::string url = "http://google.com";
-    m_web_core = createBrowser(url);
-    m_web_core.lock()->reshape(m_width, m_height);
+    std::vector<std::string> urls = {
+        "https://youtu.be/rRr19a08mHs",
+        "https://www.researchgate.net/profile/Philip-Polack/publication/318810853_The_kinematic_bicycle_model_A_consistent_model_for_planning_feasible_trajectories_for_autonomous_vehicles/links/5addcbc2a6fdcc29358b9c01/The-kinematic-bicycle-model-A-consistent-model-for-planning-feasible-trajectories-for-autonomous-vehicles.pdf",
+        //"https://www.youtube.com/"
+    };
 
-    std::string other_url = "https://github.com/Lecrapouille?tab=repositories";
-    m_web_core_other = createBrowser(other_url);
-    m_web_core_other.lock()->reshape(m_width, m_height);
+    // Create BrowserView
+    for (auto const& url: urls)
+    {
+        auto browser = createBrowser(url);
+        browser.lock()->reshape(m_width, m_height);
+    }
+
+    // Change viewports (vertical split)
+    m_browsers[0]->viewport(0.0f, 0.0f, 0.5f, 1.0f);
+    m_browsers[1]->viewport(0.5f, 0.0f, 1.0f, 1.0f);
+
+    // Do rotation animation
+    m_browsers[1]->m_fixed = false;
 
     // Windows events
     GLCHECK(glfwSetFramebufferSizeCallback(m_window, reshape_callback));
@@ -272,8 +373,8 @@ bool CEFGLWindow::setup()
     GLCHECK(glfwSetCursorPosCallback(m_window, motion_callback));
     GLCHECK(glfwSetMouseButtonCallback(m_window, mouse_callback));
 
-    // OpenGL states
-    GLCHECK(glViewport(0, 0, m_width, m_height));
+    // Set OpenGL states
+    //GLCHECK(glViewport(0, 0, m_width, m_height));
     GLCHECK(glClearColor(0.0, 0.0, 0.0, 0.0));
     //GLCHECK(glEnable(GL_CULL_FACE));
     GLCHECK(glEnable(GL_DEPTH_TEST));
@@ -284,17 +385,20 @@ bool CEFGLWindow::setup()
     return true;
 }
 
+//------------------------------------------------------------------------------
 bool CEFGLWindow::update()
 {
     GLCHECK(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-    m_web_core.lock()->draw();
-    m_web_core_other.lock()->draw();
+    for (auto it: m_browsers)
+    {
+        it->draw();
+    }
 
-    // CEF
     CefDoMessageLoopWork();
     return true;
 }
 
+//------------------------------------------------------------------------------
 static void CEFsetUp(int argc, char** argv)
 {
     CefMainArgs args(argc, argv);
@@ -309,17 +413,14 @@ static void CEFsetUp(int argc, char** argv)
         // we are here in the father proccess.
     }
 
+    // Configurate Chromium
     CefSettings settings;
-
-    // When generating projects with CMake the CEF_USE_SANDBOX value will be
-    // defined automatically. Pass -DUSE_SANDBOX=OFF to the CMake command-line
-    // to disable use of the sandbox.
+    // TODO CefString(&settings.locales_dir_path) = "cef/linux/lib/locales";
+    settings.windowless_rendering_enabled = true;
 #if !defined(CEF_USE_SANDBOX)
     settings.no_sandbox = true;
 #endif
 
-    settings.windowless_rendering_enabled = true;
-    // TODO CefString(&settings.locales_dir_path) = "cef/linux/lib/locales";
     bool result = CefInitialize(args, settings, nullptr, nullptr);
     if (!result)
     {
@@ -328,13 +429,13 @@ static void CEFsetUp(int argc, char** argv)
     }
 }
 
+//------------------------------------------------------------------------------
 int main(int argc, char *argv[])
 {
     CEFsetUp(argc, argv);
 
-    CEFGLWindow win(640, 480, "CEF OpenGL");
+    CEFGLWindow win(800, 600, "CEF OpenGL");
     int res = win.start();
 
-    CefShutdown();
     return res;
 }
