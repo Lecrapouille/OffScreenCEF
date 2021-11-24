@@ -1,6 +1,6 @@
 # Chromium Embedded Framework's cefsimple Off-Screen Rendering
 
-I needed to use a modifed version of [cefsimple](https://bitbucket.org/chromiumembedded/cef/wiki/Tutorial) using either SDL or OpenGL Core. I tried these two GitHub repos:
+I needed to use a modifed version of [cefsimple](https://bitbucket.org/chromiumembedded/cef/wiki/Tutorial) using either SDL or OpenGL Core. I tried these three GitHub repos:
 - SDL: https://github.com/gotnospirit/cef3-sdl2
 - OpenGL Core: https://github.com/if1live/cef-gl-example
 - OpenGL Core: https://github.com/andmcgregor/cefgui
