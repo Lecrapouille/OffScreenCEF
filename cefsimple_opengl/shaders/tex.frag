@@ -1,7 +1,15 @@
-precision mediump float;
-varying vec2 v_texcoord;
-uniform sampler2D s_tex;
+#version 150
+
+in vec2 Texcoord;
+
+out vec4 outputColor;
+
+uniform sampler2D tex;
 
 void main() {
-	gl_FragColor = texture2D(s_tex, v_texcoord);
+  outputColor = texture2D(tex, Texcoord);
+  if (outputColor.a < 0.1)
+  {
+    discard;
+  }
 }

@@ -1,9 +1,11 @@
-attribute vec4 a_position;
-attribute vec2 a_texcoord;
-uniform mat4 u_mvp;
-varying vec2 v_texcoord;
+#version 150
+
+in vec2 position;
+
+out vec2 Texcoord;
 
 void main() {
-	v_texcoord = a_texcoord;
-	gl_Position = u_mvp * a_position;
+  Texcoord = (vec2(position.x + 1.0f, position.y - 1.0f) * 0.5);
+  Texcoord.y *= -1.0f;
+  gl_Position = vec4(position.x, position.y, 0.0f, 1.0f);
 }

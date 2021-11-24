@@ -3,6 +3,7 @@
 I needed to use a modifed version of [cefsimple](https://bitbucket.org/chromiumembedded/cef/wiki/Tutorial) using either SDL or OpenGL Core. I tried these two GitHub repos:
 - SDL: https://github.com/gotnospirit/cef3-sdl2
 - OpenGL Core: https://github.com/if1live/cef-gl-example
+- OpenGL Core: https://github.com/andmcgregor/cefgui
 
 But they are outdated (more than > 4 years), the CEF API changed and when I compiled they crash by forking indefinitively the application until my Linux fell down. So they are not safe to be used! I tried to update fixes, so here is the repo.
 

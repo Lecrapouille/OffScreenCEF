@@ -1,5 +1,43 @@
 #include "GLCore.hpp"
 #include <fstream>
+#include <iostream>
+
+void GLCore::checkError(const char* filename, const uint32_t line, const char* expression)
+{
+    GLenum id;
+    const char* error;
+
+    while ((id = glGetError()) != GL_NO_ERROR)
+    {
+        switch (id)
+        {
+        case GL_INVALID_OPERATION:
+            error = "GL_INVALID_OPERATION";
+            break;
+        case GL_INVALID_ENUM:
+            error = "GL_INVALID_ENUM";
+            break;
+        case GL_INVALID_VALUE:
+            error = "GL_INVALID_VALUE";
+            break;
+        case GL_OUT_OF_MEMORY:
+            error = "GL_OUT_OF_MEMORY";
+            break;
+        case GL_INVALID_FRAMEBUFFER_OPERATION:
+            error = "GL_INVALID_FRAMEBUFFER_OPERATION";
+            break;
+        default:
+            error = "UNKNOWN";
+            break;
+        }
+
+        // Do not use directly LOG macros because it will catch this
+        // filename and its line instead of the faulty file/line which
+        // produced the OpenGL error.
+        std::cerr << "GLERR: " << filename << " " << line << ": Failed executing "
+                  << expression << ". Reason was " << error << std::endl;
+    }
+}
 
 GLuint GLCore::compileShaderFromCode(GLenum shader_type, const char *src)
 {
