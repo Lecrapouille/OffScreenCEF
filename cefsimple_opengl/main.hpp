@@ -109,7 +109,7 @@ private:
         //! \brief Dimension
         int m_width;
         int m_height;
-        
+
         //! \brief Where to draw on the OpenGL window
         glm::vec4 const& m_viewport;
 

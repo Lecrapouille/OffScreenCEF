@@ -75,6 +75,25 @@ You have two binaries:
 
 These applications do not have command lines, you have to edit the code to give your desired page.
 
+## Important note
+
+`CefExecuteProcess` shall be called before OpenGL/SDL2 context and using the command line
+of your application (`int argc, char* argv[]`). If not your system can freeze. Here is the
+function documentation (`caf_app.h` file):
+
+```
+   This function should be called from the application entry point function to
+   execute a secondary process. It can be used to run secondary processes from
+   the browser client executable (default behavior) or from a separate
+   executable specified by the CefSettings.browser_subprocess_path value. If
+   called for the browser process (identified by no "type" command-line value)
+   it will return immediately with a value of -1. If called for a recognized
+   secondary process it will block until the process should exit and then return
+   the process exit code. The |application| parameter may be empty. The
+   |windows_sandbox_info| parameter is only used on Windows and may be NULL (see
+   cef_sandbox_win.h for details).
+```
+
 ## Demo
 
 https://youtu.be/8xhxiDI4D5o
