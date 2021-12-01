@@ -418,7 +418,7 @@ static void CEFsetUp(int argc, char** argv)
         // Sub proccess has endend, so exit
         exit(exit_code);
     }
-    else if (result == -1)
+    else if (exit_code == -1)
     {
         // If called for the browser process (identified by no "type" command-line value)
         // it will return immediately with a value of -1
