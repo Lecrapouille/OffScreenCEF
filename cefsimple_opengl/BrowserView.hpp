@@ -1,8 +1,12 @@
-#ifndef MAIN_HPP
-#  define MAIN_HPP
+// This code is a modification of the original "cefsimple" example that can be found at
+// https://bitbucket.org/chromiumembedded/cef/wiki/GeneralUsage
 
-// Main application
-#  include "GLWindow.hpp"
+#ifndef BROWSERVIEW_HPP
+#  define BROWSERVIEW_HPP
+
+// OpenGL
+#  include <GL/glew.h>
+#  include <GLFW/glfw3.h>
 
 // Matrices manipulation for OpenGL
 #  include <glm/glm.hpp>
@@ -32,19 +36,21 @@ public:
     //! \brief
     ~BrowserView();
 
-    //! \brief Load the given web page
+    //! \brief Load the given web page.
     void load(const std::string &url);
 
-    //! \brief Render the web page
+    //! \brief Render the web page.
     void draw();
 
-    //! \brief Set the windows size
+    //! \brief Set the windows size.
     void reshape(int w, int h);
 
-    //! \brief Set the viewport
+    //! \brief Set the viewport: the rectangle on the window where to display
+    //! the web document.
+    //! \return false if arguments are incorrect.
     bool viewport(float x, float y, float w, float h);
 
-    //! \brief Get the viewport
+    //! \brief Get the viewport.
     inline glm::vec4 const& viewport() const
     {
         return m_viewport;
@@ -177,44 +183,4 @@ public:
     bool m_fixed = true;
 };
 
-// ****************************************************************************
-//! \brief Extend the OpenGL base window and add Chromium Embedded Framework
-//! browser views.
-// ****************************************************************************
-class CEFGLWindow: public GLWindow
-{
-public:
-
-    //! \brief Default construction: define the window dimension and title
-    CEFGLWindow(uint32_t const width, uint32_t const height, const char *title);
-
-    //! \brief Destructor
-    ~CEFGLWindow();
-
-    //! \brief Non const getter of the list of browsers
-    inline std::vector<std::shared_ptr<BrowserView>>& browsers()
-    {
-        return m_browsers;
-    }
-
-private: // Concrete implementation from GLWindow
-
-    virtual bool setup() override;
-    virtual bool update() override;
-
-private:
-
-    //! \brief Create a new browser view from a given URL
-    std::weak_ptr<BrowserView> createBrowser(const std::string &url);
-
-    //! \brief Destroy the given browser view.
-    void removeBrowser(std::weak_ptr<BrowserView> web_core);
-
-private:
-
-    //! \brief List of BrowserView managed by createBrowser() and
-    //! removeBrowser() methods.
-    std::vector<std::shared_ptr<BrowserView>> m_browsers;
-};
-
-#endif
+#endif // BROWSERVIEW_HPP

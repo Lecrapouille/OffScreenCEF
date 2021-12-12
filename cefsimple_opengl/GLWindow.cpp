@@ -1,3 +1,6 @@
+// This code is a modification of the original project that can be found at
+// https://github.com/Lecrapouille/OpenGLCppWrapper
+
 #include "GLWindow.hpp"
 #include <iostream>
 #include <cassert>

@@ -309,7 +309,7 @@ int main(int argc, char * argv[])
             browserClient = new BrowserClient(renderHandler);
             browser = CefBrowserHost::CreateBrowserSync(window_info,
                                                         browserClient.get(),
-                                                        "http://www.google.com",
+                                                        "https://www.youtube.com/watch?v=bOf6CjpuSFs",
                                                         browserSettings,
                                                         nullptr, nullptr);
 

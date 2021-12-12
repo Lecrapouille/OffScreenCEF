@@ -1,3 +1,6 @@
+// This code is a modification of the original project that can be found at
+// https://github.com/if1live/cef-gl-example
+
 #include "GLCore.hpp"
 #include <fstream>
 #include <iostream>
