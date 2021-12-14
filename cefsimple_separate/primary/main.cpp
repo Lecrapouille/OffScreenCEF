@@ -28,7 +28,7 @@ public:
 
     virtual void OnBeforeCommandLineProcessing(
         const CefString& ProcessType,
-        CefRefPtr< CefCommandLine > CommandLine) override
+        CefRefPtr<CefCommandLine> CommandLine) override
     {
         /**
          * Used to pick command line switches
@@ -36,7 +36,6 @@ public:
          * If set to "false": CEF will use more CPU, but rendering will be better, CSS3 and WebGL will also be usable
          */
         BluManager::CPURenderSettings = false;
-        /////////////////
 
         CommandLine->AppendSwitch("off-screen-rendering-enabled");
         CommandLine->AppendSwitchWithValue("off-screen-frame-rate", "60");
@@ -89,10 +88,8 @@ class RenderHandler: public CefRenderHandler
 {
 public:
 
-    RenderHandler(SDL_Renderer* renderer, int w, int h) // FIXME UBluEye* UI == SDL_Renderer ???
-        : m_width(w),
-          m_height(h),
-          m_renderer(renderer)
+    RenderHandler(SDL_Renderer& renderer, int w, int h)
+        : m_width(w), m_height(h), m_renderer(&renderer)
     {
         m_texture = SDL_CreateTexture(m_renderer, SDL_PIXELFORMAT_UNKNOWN,
                                       SDL_TEXTUREACCESS_STREAMING, w, h);
@@ -108,22 +105,23 @@ public:
         m_renderer = nullptr;
     }
 
-    virtual void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect) override
+    virtual void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) override
     {
         rect = CefRect(0, 0, m_width, m_height);
     }
 
     virtual void OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType type,
-                         const RectList &dirtyRects, const void * buffer,
+                         const RectList& dirtyRects, const void* buffer,
                          int w, int h) override
     {
         std::cout << "OnPaint" << std::endl;
         if (m_texture != nullptr)
         {
-            unsigned char * texture_data = nullptr;
+            std::cout << "OnPaint != nullptr" << std::endl;
+            unsigned char* texture_data = nullptr;
             int texture_pitch = 0;
 
-            SDL_LockTexture(m_texture, 0, (void **)&texture_data, &texture_pitch);
+            SDL_LockTexture(m_texture, 0, (void**) &texture_data, &texture_pitch);
             memcpy(texture_data, buffer, w * h * 4);
             SDL_UnlockTexture(m_texture);
         }
@@ -154,8 +152,8 @@ public: // private:
 
 private:
 
-    SDL_Renderer * m_renderer = nullptr;
-    SDL_Texture * m_texture = nullptr;
+    SDL_Renderer* m_renderer = nullptr;
+    SDL_Texture* m_texture = nullptr;
 
     IMPLEMENT_REFCOUNTING(RenderHandler);
 };
@@ -338,8 +336,8 @@ void StartupModule()
     // Make a new manager instance
     CefRefPtr<BluManager> BluApp = new BluManager();
 
-    //CefExecuteProcess(BluManager::main_args, BluApp, NULL);
-    CefInitialize(BluManager::MainArgs, BluManager::Settings, BluApp, NULL);
+    //CefExecuteProcess(BluManager::main_args, BluApp, nullptr);
+    CefInitialize(BluManager::MainArgs, BluManager::Settings, BluApp, nullptr);
 
     std::cout << "StartupModule end" << std::endl;
 }
@@ -369,7 +367,7 @@ public:
 
         /*if (GEngine)
           {
-          if (GEngine->IsEditor() && !GWorld->IsPlayInEditor())
+          if (GEngine->IsEditor()& & !GWorld->IsPlayInEditor())
           {
           UE_LOG(LogBlu, Log, TEXT("Notice: not playing - Component Will Not Initialize"));
           return;
@@ -470,37 +468,50 @@ public:
 
     void LoadURL(std::string const& url)
     {
+        assert(Browser != nullptr);
+
         Browser->GetMainFrame()->LoadURL(url);
     }
 
     std::string GetCurrentURL()
     {
+        assert(Browser != nullptr);
+
         return Browser->GetMainFrame()->GetURL();
     }
 
     void SetZoom(const float Scale /*= 1*/)
     {
+        assert(Browser != nullptr);
+
         Browser->GetHost()->SetZoomLevel(Scale);
     }
 
     float GetZoom()
     {
+        assert(Browser != nullptr);
+
         return Browser->GetHost()->GetZoomLevel();
     }
 
     void DownloadFile(std::string const& FileUrl)
     {
+        assert(Browser != nullptr);
+
         Browser->GetHost()->StartDownload(FileUrl);
         //Todo: ensure downloading works in some way, shape or form?
     }
 
     bool IsBrowserLoading()
     {
+        assert(Browser != nullptr);
+
         return Browser->IsLoading();
     }
 
     void ReloadBrowser(bool IgnoreCache)
     {
+        assert(Browser != nullptr);
 
         if (IgnoreCache)
         {
@@ -508,31 +519,33 @@ public:
         }
 
         Browser->Reload();
-
     }
 
     void NavBack()
     {
+        assert(Browser != nullptr);
 
         if (Browser->CanGoBack())
         {
             Browser->GoBack();
         }
-
     }
 
     void NavForward()
     {
+        assert(Browser != nullptr);
 
         if (Browser->CanGoForward())
         {
             Browser->GoForward();
         }
-
     }
 
     void ResizeBrowser(const int32 NewWidth, const int32 NewHeight)
     {
+        assert(Renderer != nullptr);
+        assert(Browser != nullptr);
+
         if (NewWidth <= 0 || NewHeight <= 0)
             return ;
 
@@ -544,8 +557,7 @@ public:
         Settings.Height = NewHeight;
 
         // Update our render handler
-        Renderer->m_width = NewWidth;
-        Renderer->m_height = NewHeight;
+        Renderer->resize(NewWidth, NewHeight);
 
         //bValidTexture = false;
 
@@ -569,14 +581,20 @@ public:
         return m_closing;
     }
 
+    void render()
+    {
+        assert(Renderer != nullptr);
+        Renderer->render();
+    }
+
 private:
 
     CefWindowInfo Info;
-    CefRefPtr<BrowserClient> ClientHandler;
     CefBrowserSettings BrowserSettings;
-    RenderHandler* Renderer;
-    CefRefPtr<CefBrowser> Browser;
     BluEyeSettings Settings;
+    CefRefPtr<BrowserClient> ClientHandler = nullptr;
+    RenderHandler* Renderer = nullptr;
+    CefRefPtr<CefBrowser> Browser = nullptr;
     bool m_closing = false;
 };
 
@@ -621,13 +639,13 @@ int main(int argc, char * argv[])
 
     SDL_Event e;
     BrowserView browser_client;
-    browser_client.init(sdl_renderer);
+    browser_client.init(*sdl_renderer);
 
     bool shutdown = false;
     while (!browser_client.closeAllowed())
     {
         // send events to browser
-        while (!shutdown && SDL_PollEvent(&e) != 0)
+        while (!shutdown& & SDL_PollEvent(&e) != 0)
         {
             switch (e.type)
             {
@@ -678,7 +696,7 @@ int main(int argc, char * argv[])
 
         // render
         SDL_RenderClear(sdl_renderer);
-        //QQ renderHandler->render();
+        browser_client.render();
         SDL_RenderPresent(sdl_renderer);
     }
 
