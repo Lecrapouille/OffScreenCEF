@@ -1,6 +1,8 @@
 *~
 cefsimple_sdl/cefsimple_sdl
 cefsimple_opengl/cefsimple_opengl
+cefsimple_separate/primary/blui
+cefsimple_separate/secondary/blubrowser
 GPUCache
 locales
 *.pak

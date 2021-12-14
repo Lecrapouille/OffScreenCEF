@@ -3,10 +3,20 @@
 
 #include "include/base/cef_logging.h"
 #include "blubrowser_app.h"
+#include <iostream>
 
 // Entry point function for all processes.
 int main(int argc, char* argv[])
 {
+    std::cout << ::getpid() << "::" << ::getppid() << ": subprocess "
+              << __FILE__ << ": " << __PRETTY_FUNCTION__ << std::endl;
+    std::vector<std::string> backup_args;
+    for (int i = 0; i < argc; ++i)
+    {
+        std::cerr << "subprocess arg " << i << ": " << argv[i] << std::endl;
+        backup_args.push_back(argv[i]);
+    }
+
     // Provide CEF with command-line arguments.
     CefMainArgs main_args(argc, argv);
 
