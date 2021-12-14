@@ -259,14 +259,14 @@ int main(int argc, char * argv[])
     if (!CefInitialize(args, settings, nullptr, nullptr))
     {
         // handle error
-        return -1;
+        return EXIT_FAILURE;
     }
 
     // Initialize SDL
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
     {
         std::cerr << "SDL could not initialize! SDL_Error: " << SDL_GetError() << std::endl;
-        return 1;
+        return EXIT_FAILURE;
     }
 
     int width = 800;
@@ -279,6 +279,7 @@ int main(int argc, char * argv[])
     {
         std::cerr << "SDL could not create window! SDL_Error: "
                   << SDL_GetError() << std::endl;
+        return EXIT_FAILURE;
     }
     else
     {
@@ -289,6 +290,9 @@ int main(int argc, char * argv[])
         {
             std::cerr << "SDL could not create renderer! SDL_Error: "
                       << SDL_GetError() << std::endl;
+            SDL_DestroyWindow(window);
+            SDL_Quit();
+            return EXIT_FAILURE;
         }
         else
         {
@@ -484,5 +488,5 @@ int main(int argc, char * argv[])
     SDL_DestroyWindow(window);
     SDL_Quit();
 
-    return 0;
+    return EXIT_SUCCESS;
 }
