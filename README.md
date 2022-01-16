@@ -1,15 +1,17 @@
-# Chromium Embedded Framework's cefsimple Off-Screen Rendering
+# Chromium Embedded Framework's cefsimple Off-Screen Rendering using SDL2 or Core OpenGL
 
 CEF = Chromium Embedded Framework
 
 I needed to use a modifed version of the C++ CEF example named [cefsimple](https://bitbucket.org/chromiumembedded/cef/wiki/Tutorial) instead of X11 I needed using either SDL2 or OpenGL Core (glew, glfw3). I tried these three GitHub repos without success:
-- SDL: https://github.com/gotnospirit/cef3-sdl2
+- SDL2: https://github.com/gotnospirit/cef3-sdl2
+- SDL2: https://github.com/jamethy/sdl2-cef
 - OpenGL Core: https://github.com/if1live/cef-gl-example
 - OpenGL Core: https://github.com/andmcgregor/cefgui
 
 They are outdated (more than > 4 years), the CEF API changed and when I compiled they crash by forking indefinitively the application until my Linux fell down. So they are not safe to be used! I tried to update fixes, so here is the repo. They are inside folders:
 - cefsimple_sdl
 - cefsimple_opengl
+- cefsimple_separate
 
 [![OpenGL version](doc/screenshot.png)](https://youtu.be/8xhxiDI4D5o)
 
@@ -24,6 +26,7 @@ They are outdated (more than > 4 years), the CEF API changed and when I compiled
 ## Help wanted
 
 Any pull requests and help are welcome to improve these examples :)
+You can complete the API by adding more methods such as previous/next page, reload, zoom ... See https://github.com/oivio/BLUI
 
 ## Tested on:
 
@@ -31,9 +34,9 @@ It's working on my Linux 64-bits Debian 11 and CEF 96.0.14 downloaded at https:/
 
 ## Some Differences
 
-- cefsimple_sdl is a single main file while cefsimple_opengl has been splited into several files.
-- cefsimple_sdl is using more handler such as `CefLifeSpanHandler`. cefsimple_opengl not.
-- cefsimple_opengl is using several viewports. cefsimple_sdl not.
+- `cefsimple_sdl` is a single main file while cefsimple_opengl has been splited into several files.
+- `cefsimple_sdl` is using more handler such as `CefLifeSpanHandler`. cefsimple_opengl not.
+- `cefsimple_opengl` is using several viewports. cefsimple_sdl not.
 - `CefExecuteProcess` shall be called before OpenGL/SDL2 context and using the command line
 of your application (`int argc, char* argv[]`). If not your system can freeze. Here is the
 function documentation (`caf_app.h` file):
@@ -50,8 +53,7 @@ function documentation (`caf_app.h` file):
    |windows_sandbox_info| parameter is only used on Windows and may be NULL (see
    cef_sandbox_win.h for details).
 ```
-- cefsimple_separate has been added when you cannot modify the main application to access to the `int main(int argc, char* argv[])` function.
-- You can complete API by adding more methods such as previous/next page, reload ... See https://github.com/oivio/BLUI
+- In `cefsimple_sdl` and `cefsimple_opengl`, both programs can access to the `main(int argc, char* argv[])` function and therefore access to the command line. CEF; when forking; modifies the command lines to give behaviors to forked child. Sometimes, accessing to the main function is not possible (or when your application is also using the command line, while possible to save and restore it before and after calling CEF). Therefore you shall launch a second process which can access its main function and therefore call chromium. As consequence `cefsimple_separate` has been added when you cannot modify the main application to access to the `int main(int argc, char* argv[])` function.
 
 ## /!\ Setup /!\
 
