@@ -2,16 +2,16 @@
 
 CEF = Chromium Embedded Framework
 
-I needed to use a modifed version of the C++ CEF example named [cefsimple](https://bitbucket.org/chromiumembedded/cef/wiki/Tutorial) instead of X11 I needed using either SDL2 or OpenGL Core (glew, glfw3). I tried these three GitHub repos without success:
+For a GitHub project (not yet in public access) I needed to prototype and to modify the C++ CEF example named [cefsimple](https://bitbucket.org/chromiumembedded/cef/wiki/Tutorial) instead of X11 I needed using either SDL2 or OpenGL Core (glew, glfw3). I tried these three GitHub repos without success:
 - SDL2: https://github.com/gotnospirit/cef3-sdl2
 - SDL2: https://github.com/jamethy/sdl2-cef
 - OpenGL Core: https://github.com/if1live/cef-gl-example
 - OpenGL Core: https://github.com/andmcgregor/cefgui
 
 They are outdated (more than > 4 years), the CEF API changed and when I compiled they crash by forking indefinitively the application until my Linux fell down. So they are not safe to be used! I tried to update fixes, so here is the repo. They are inside folders:
-- cefsimple_sdl
-- cefsimple_opengl
-- cefsimple_separate
+- cefsimple_sdl: using SDL2
+- cefsimple_opengl: using OpenGL Core (>= 3.3)
+- cefsimple_separate: with 2 separated proccess (needed when you cannot access to the `main(int argc, char* argv[])` function.
 
 [![OpenGL version](doc/screenshot.png)](https://youtu.be/8xhxiDI4D5o)
 
@@ -21,7 +21,7 @@ They are outdated (more than > 4 years), the CEF API changed and when I compiled
 
 **Note 2:** I find the system not very reactive compared to the official cefsimple example.
 
-I'm also currently trying separated executables based on https://github.com/oivio/BLUI calling https://github.com/ashea-code/BluBrowser. They are inside folder cefsimple_separate. Similar project: https://github.com/cztomczak/cefpython (C++ code).
+I'm also currently trying separated executables based on https://github.com/oivio/BLUI calling https://github.com/ashea-code/BluBrowser. They are inside folder cefsimple_separate.
 
 ## Help wanted
 
@@ -64,15 +64,16 @@ Run the bash script for Linux:
 ./install.sh
 ```
 
+I will download CEF inside `thirdparty`, compile it and compile my examples.
 Once done with success, you can go the `build` folder and run one of the following applications:
 - `./secondary_process`
 - `./primary_process`
 - `./cefsimple_opengl`
 - `./cefsimple_sdl`
 
-I will download CEF, compile it and compile examples. Here what the script is doing:
+Here what the script is doing but manually:
 
-Before compiling any example you will need some libs and packages compiled from Chromium Embedded Framework example and copy these assets inside my folders to make my cefsimple compiling and working. You will need to adapt build.sh scripts to refer to the CEF folder.
+Before compiling any examples it need some libs and packages compiled from Chromium Embedded Framework example and copy these assets inside my folders to make my cefsimple compiling and working.
 
 Firstly, let name some folders. This will shorter code in this document. Adapt the CEF version to your operating system with the desired version according to https://cef-builds.spotifycdn.com/index.html
 
@@ -88,9 +89,9 @@ CEFSIMPLE_GL=$CEF/tests/cefsimple_opengl
 Download and decompress it inside a temporary folder:
 
 ```bash
-wget $CEF_LINK
-tar jxvf $CEF_TARBALL
+wget -c $CEF_LINK -O- | tar -xj
 ```
+
 
 Git clone this repo inside the cef folder:
 
@@ -108,7 +109,7 @@ cmake -DCMAKE_BUILD_TYPE=Debug ..
 make -j$(nproc)
 ```
 
-You can use `-DCMAKE_BUILD_TYPE=Release` instead but just avoid mixing debug and release symbols. Now we have to copy needed elements for compiling `cefsimple_sdl` and `cefsimple_opengl`:
+`$(nproc)` is your number of CPU cores. You can use `-DCMAKE_BUILD_TYPE=Release` instead but just avoid mixing debug and release symbols. Now we have to copy needed elements for compiling `cefsimple_sdl` and `cefsimple_opengl`:
 
 ```bash
 cp -v $CEF/Debug/libcef.so $CEF/build/libcef_dll_wrapper/libcef_dll_wrapper.a $CEFSIMPLE_SDL
@@ -127,17 +128,10 @@ Do the same thing for `$CEFSIMPLE_GL`. See the screenshot for needed assets:
 
 *Fig 2 - Needed assets from CEF.*
 
-## Compilation
+CEF needs all its assets next to it. Some pathes can be configured. See OffScreenCEF/thirdparty/cef_binary/include/internal/cef_types.h for more informations (once CEF downloaded by the install.sh script).
 
-You need to adapt the path to CEF main folder by mofdifying the line `CEF=...` in each `build.sh` files.
+## Other projects
 
-```bash
-cd $CEFSIMPLE_SDL && ./build.sh
-cd $CEFSIMPLE_GL && ./build.sh
-```
-
-You have two binaries:
-- `$CEFSIMPLE_SDL/cefsimple_sdl`
-- `$CEFSIMPLE_GL/cefsimple_opengl`
-
-These applications do not have command lines, you have to edit the code to give your desired page.
+- For C++/Qt: https://github.com/CefView/CefViewCore
+- For C++/Python: https://github.com/cztomczak/cefpython
+- For C#/Unity: https://github.com/Voltstro-Studios/UnityWebBrowser
