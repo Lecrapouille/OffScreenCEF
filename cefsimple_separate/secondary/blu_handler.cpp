@@ -98,7 +98,7 @@ void BluHandler::OnLoadError(CefRefPtr<CefBrowser> browser,
                              const CefString& failedUrl)
 {
     // Don't display an error for downloaded files.
-    if (errorCode == CEF__ERR_ABORTED)
+    if (errorCode == ERR_ABORTED)
         return;
 
     CEF_REQUIRE_UI_THREAD();

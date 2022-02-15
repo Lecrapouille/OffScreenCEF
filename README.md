@@ -21,7 +21,7 @@ They are outdated (more than > 4 years), the CEF API changed and when I compiled
 
 **Note 2:** I find the system not very reactive compared to the official cefsimple example.
 
-(in gestation) I'm also currently trying separated executables based on https://github.com/oivio/BLUI calling https://github.com/ashea-code/BluBrowser. They are inside folder cefsimple_separate. Similar project: https://github.com/cztomczak/cefpython (C++ code).
+I'm also currently trying separated executables based on https://github.com/oivio/BLUI calling https://github.com/ashea-code/BluBrowser. They are inside folder cefsimple_separate. Similar project: https://github.com/cztomczak/cefpython (C++ code).
 
 ## Help wanted
 
@@ -31,6 +31,8 @@ You can complete the API by adding more methods such as previous/next page, relo
 ## Tested on:
 
 It's working on my Linux 64-bits Debian 11 and CEF 96.0.14 downloaded at https://cef-builds.spotifycdn.com/index.html
+I know the Windows version can work quite easily but I did not have batch files.
+The MacOS X is more complex and is not working yet.
 
 ## Some Differences
 
@@ -55,9 +57,22 @@ function documentation (`caf_app.h` file):
 ```
 - In `cefsimple_sdl` and `cefsimple_opengl`, both programs can access to the `main(int argc, char* argv[])` function and therefore access to the command line. CEF; when forking; modifies the command lines to give behaviors to forked child. Sometimes, accessing to the main function is not possible (or when your application is also using the command line, while possible to save and restore it before and after calling CEF). Therefore you shall launch a second process which can access its main function and therefore call chromium. As consequence `cefsimple_separate` has been added when you cannot modify the main application to access to the `int main(int argc, char* argv[])` function.
 
-## /!\ Setup /!\
+## /!\ Installation /!\
 
-Before compiling any cefsimple of mine, you will need some libs and packages compiled from Chromium Embedded Framework example and copy these assets inside my folders to make my cefsimple compiling and working. You will need to adapt build.sh scripts to refer to the CEF folder.
+Run the bash script for Linux:
+```
+./install.sh
+```
+
+Once done with success, you can go the `build` folder and run one of the following applications:
+- `./secondary_process`
+- `./primary_process`
+- `./cefsimple_opengl`
+- `./cefsimple_sdl`
+
+I will download CEF, compile it and compile examples. Here what the script is doing:
+
+Before compiling any example you will need some libs and packages compiled from Chromium Embedded Framework example and copy these assets inside my folders to make my cefsimple compiling and working. You will need to adapt build.sh scripts to refer to the CEF folder.
 
 Firstly, let name some folders. This will shorter code in this document. Adapt the CEF version to your operating system with the desired version according to https://cef-builds.spotifycdn.com/index.html
 

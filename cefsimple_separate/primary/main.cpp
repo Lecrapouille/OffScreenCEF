@@ -325,7 +325,11 @@ void StartupModule()
     BluManager::Settings.remote_debugging_port = 7777;
     BluManager::Settings.uncaught_exception_stack_size = 5;
 
-    CefString realExePath = "/home/qq/MyGitHub/OffScreenCEF/cefsimple_separate/secondary/blubrowser";
+#ifndef SECONDARY_PATH
+#  error "SECONDARY_PATH is not defined and its path shall be canonical"
+#endif
+
+    CefString realExePath = SECONDARY_PATH;
 
     // Set the sub-process path
     CefString(&BluManager::Settings.browser_subprocess_path).FromString(realExePath);
@@ -405,7 +409,7 @@ public:
         //NB: this setting will change it globally for all new instances
         BluManager::AutoPlay = Settings.bAutoPlayEnabled;
 
-        Renderer = new RenderHandler(sdl, Settings.Width, Settings.Height);
+        Renderer = new RenderHandler(*sdl, Settings.Width, Settings.Height);
         ClientHandler = new BrowserClient(Renderer);
         Browser = CefBrowserHost::CreateBrowserSync(Info,
                                                     ClientHandler.get(),
@@ -639,13 +643,13 @@ int main(int argc, char * argv[])
 
     SDL_Event e;
     BrowserView browser_client;
-    browser_client.init(*sdl_renderer);
+    browser_client.init(sdl_renderer);
 
     bool shutdown = false;
     while (!browser_client.closeAllowed())
     {
         // send events to browser
-        while (!shutdown& & SDL_PollEvent(&e) != 0)
+        while ((!shutdown) && (SDL_PollEvent(&e) != 0))
         {
             switch (e.type)
             {
