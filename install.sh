@@ -82,7 +82,7 @@ CEF_TARGET=Debug
 
 ###
 WEBSITE=https://cef-builds.spotifycdn.com
-CEF_TARBALL=cef_binary_97.1.6%2Bg8961cdb%2Bchromium-97.0.4692.99_$ARCHI.tar.bz2
+CEF_TARBALL=cef_binary_99.2.12%2Bg2977b3a%2Bchromium-99.0.4844.74_$ARCHI.tar.bz2
 if [ ! -d "$THIRDPARTY_PATH/cef_binary" ]; then
     msg "Downloading Chromium Embedded Framework v96 for archi $ARCHI to $CEF_PATH ..."
     mkdir -p $THIRDPARTY_PATH
