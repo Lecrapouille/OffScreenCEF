@@ -246,7 +246,7 @@ int main(int argc, char * argv[])
     // command args and resources.
     if (result >= 0)
     {
-        // Sub proccess has endend, so exit
+        // Forked process has ended, so exit
         exit(result);
     }
     else if (result == -1)

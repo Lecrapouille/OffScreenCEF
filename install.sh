@@ -169,7 +169,7 @@ if  [ ! -e "$BUILD_PATH/secondary_process" ]; then
     )
 fi
 
-msg "Compilation done with success! You can go to $BUILD_PATH and run one of the following applications:"
+msg "Compilation done with success! Be sure to be inside $BUILD_PATH and run one of the following applications:"
 msg "  ./secondary_process"
 msg "  ./primary_process"
 msg "  ./cefsimple_opengl"
