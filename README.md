@@ -187,8 +187,8 @@ For rendering the web document, check out the code with:
 class RenderHandler: public CefRenderHandler { ...
 ```
 
-Two important methods to override:
-- The GetViewRect that will get the region of your texture/windows and inform CEF. For a full page:
+Two important methods to override from `CefRenderHandler`:
+- The `GetViewRect` that will get the region of your texture/windows and inform CEF. For a full page:
 
 ```
 virtual void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) override
@@ -223,17 +223,107 @@ for (int i = 0; i < TEXTURE_SIZE; i += COLOR_CHANELS)
 }
 ```
 
-The dirtyRects contains a list dirty region to refresh. This avoids repainting the entire texture.
+The `dirtyRects` contains a list dirty region to refresh. This avoids repainting the entire texture.
 
-You can derive some CEF classes to override some of their methods to react to events such as a browser is created, closed,
-page loaded ...
+In a general way, you can derive some CEF classes to override some of their methods to react to events such as a browser is created, closed, page loaded ...
 
 ```
-class BrowserClient: public CefClient,
-                     public CefLifeSpanHandler,
-                     public CefLoadHandler
-{ ...
+class BrowserClient: public CefRenderHandler,
+                     public CefLoadHandler,
+                     public CefClient
+{
+    public:
+
+        BrowserClient() { ... }
+
+    private: // CefClient::CefBaseRefCounted interfaces
+
+        // ---------------------------------------------------------------------
+        //! \brief CEF reference couting
+        // ---------------------------------------------------------------------
+        IMPLEMENT_REFCOUNTING(BrowserClient);
+
+    private: // CefClient interfaces
+
+        // ---------------------------------------------------------------------
+        //! \brief Return the handler for off-screen rendering events.
+        // ---------------------------------------------------------------------
+        virtual CefRefPtr<CefRenderHandler> GetRenderHandler() override
+        {
+            return this;
+        }
+
+        // ---------------------------------------------------------------------
+        //! \brief Return the handler for browser load status events.
+        // ---------------------------------------------------------------------
+        virtual CefRefPtr<CefLoadHandler> GetLoadHandler() override
+        {
+            return this;
+        }
+
+    private: // CefRenderHandler interfaces
+
+        // ---------------------------------------------------------------------
+        //! \brief Get the view port.
+        // ---------------------------------------------------------------------
+        virtual void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) override
+        {
+            ...
+        }
+
+        // ---------------------------------------------------------------------
+        //! \brief Called when an element should be painted. Pixel values passed
+        //! to this method are scaled relative to view coordinates based on the
+        //! value of CefScreenInfo.device_scale_factor returned from
+        //! GetScreenInfo. |type| indicates whether the element is the view or
+        //! the popup widget. |buffer| contains the pixel data for the whole
+        //! image. |dirtyRects| contains the set of rectangles in pixel
+        //! coordinates that need to be repainted. |buffer| will be
+        //! |width|*|height|*4 bytes in size and represents a BGRA image with an
+        //! upper-left origin. This method is only called when
+        //! CefWindowInfo::shared_texture_enabled is set to false.
+        // ---------------------------------------------------------------------
+        virtual void OnPaint(CefRefPtr<CefBrowser> browser,
+                             CefRenderHandler::PaintElementType type,
+                             const CefRenderHandler::RectList& dirtyRects,
+                             const void* buffer, int width, int height) override
+        {
+            ...
+        }
+
+    private: // CefLoadHandler interfaces
+
+        // ---------------------------------------------------------------------
+        //! \brief Called when the browser is done loading a frame. The |frame|
+        //! value will never be empty -- call the IsMain() method to check if
+        //! this frame is the main frame. Multiple frames may be loading at the
+        //! same time. Sub-frames may start or continue loading after the main
+        //! frame load has ended. This method will not be called for same page
+        //! navigations (fragments, history state, etc.) or for navigations that
+        //! fail or are canceled before commit. For notification of overall
+        //! browser load status use OnLoadingStateChange instead.
+        // ---------------------------------------------------------------------
+        virtual void OnLoadEnd(CefRefPtr<CefBrowser> browser,
+                               CefRefPtr<CefFrame> frame,
+                               int httpStatusCode) override
+        {
+            ...
+        }
+    };
 ```
+
+The way is always the same: to override methods from `CefXXXHandler` you have first to
+override methods from `CefClient`:
+```
+virtual CefRefPtr<CefXXXHandler> GetXXXHandler() override
+{
+   return this;
+}
+```
+
+(instead of the default method returning `nullptr`) meaning the handler is now used.
+Since `CefClient` derives from `CefBaseRefCounted` you will also have to define
+reference counting interfaces by adding `IMPLEMENT_REFCOUNTING(BrowserClient);`
 
 To create of a browser, the following code is needed:
 
