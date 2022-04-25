@@ -2,7 +2,7 @@
 
 CEF = Chromium Embedded Framework
 
-For a GitHub project using Godot Engine (not yet in public access), I needed to prototype and modify the C++ CEF example named [cefsimple](https://bitbucket.org/chromiumembedded/cef/wiki/Tutorial) instead of X11 I needed using either SDL2 or OpenGL Core (glew, glfw3). I tried the following GitHub repos but without success:
+For the GitHub project named [Stigmee](https://github.com/stigmee) using [Godot Engine](https://github.com/godotengine/godot), and particularly for its [module](https://github.com/stigmee/gdnative-cef), I needed to make my hand on something simpler and therefore prototype and modify the C++ CEF example named [cefsimple](https://bitbucket.org/chromiumembedded/cef/wiki/Tutorial) to replace the X11 display by either SDL2 or OpenGL Core (glew, glfw3). I tried the following GitHub repos but without success:
 - SDL2: https://github.com/gotnospirit/cef3-sdl2
 - SDL2: https://github.com/jamethy/sdl2-cef
 - OpenGL Core: https://github.com/if1live/cef-gl-example
@@ -20,7 +20,7 @@ the command line (you can back it up, meaning using a `std::vector` to back up `
 
 In this screenshot, you can see two browsers: one running YouTube, the second running a PDF (the projection of the mouse to the PDF plan has not been made).
 
-**Note 1:** The keyboard/mouse event conversion from SDL2/glfw3 to CEF has to be fixed. **Update:** I have a functional keyboard for Godot/CEF and I have to patch this repo for SDL and glfw3 (request me if you needed it urgently).
+**Note 1:** The keyboard/mouse event conversion from SDL2/glfw3 to CEF has to be fixed. **Update:** I have a functional keyboard for Godot/CEF but I have not yet patched this current repo for SDL and glfw3 (request me if you needed it urgently). So you can look at this [code](https://github.com/stigmee/gdnative-cef/blob/master/gdcef/src/browser_io.cpp).
 
 **Note 2:** I find the system not very reactive compared to the official cefsimple example.
 
@@ -355,6 +355,7 @@ m_browser->GetHost()->SendMouseMoveEvent(evt, mouse_leave);
 
 ## Other projects
 
+- For Godot: https://github.com/stigmee/gdnative-cef
 - For C++/Qt: https://github.com/CefView/CefViewCore
 - For C++/Python: https://github.com/cztomczak/cefpython
 - For C#/Unity: https://github.com/Voltstro-Studios/UnityWebBrowser
