@@ -2,7 +2,9 @@
 
 CEF = Chromium Embedded Framework
 
-For the GitHub project named [Stigmee](https://github.com/stigmee) using [Godot Engine](https://github.com/godotengine/godot), and particularly for its [module](https://github.com/stigmee/gdnative-cef), I needed to make my hand on something simpler and therefore prototype and modify the C++ CEF example named [cefsimple](https://bitbucket.org/chromiumembedded/cef/wiki/Tutorial) to replace the X11 display by either SDL2 or OpenGL Core (glew, glfw3). I tried the following GitHub repos but without success:
+**This project shall be considered as proof of concept for this [project](https://github.com/Lecrapouille/gdcef)**
+
+For the GitHub project named [Stigmee](https://github.com/stigmee) using [Godot Engine](https://github.com/godotengine/godot), and particularly for its [CEF native module](https://github.com/stigmee/gdnative-cef) (under GPL license, but also forked as MIT license https://github.com/Lecrapouille/gdcef), I needed to make my hand on something simpler and therefore prototype (proof of concept) and modify the C++ CEF example named [cefsimple](https://bitbucket.org/chromiumembedded/cef/wiki/Tutorial) to replace the X11 display by either SDL2 or OpenGL Core (glew, glfw3). I tried the following GitHub repos but without success:
 - SDL2: https://github.com/gotnospirit/cef3-sdl2
 - SDL2: https://github.com/jamethy/sdl2-cef
 - OpenGL Core: https://github.com/if1live/cef-gl-example
@@ -20,19 +22,19 @@ the command line (you can back it up, meaning using a `std::vector` to back up `
 
 In this screenshot, you can see two browsers: one running YouTube, the second running a PDF (the projection of the mouse to the PDF plan has not been made).
 
-**Note 1:** The keyboard/mouse event conversion from SDL2/glfw3 to CEF has to be fixed. **Update:** I have a functional keyboard for Godot/CEF but I have not yet patched this current repo for SDL and glfw3 (request me if you needed it urgently). So you can look at this [code](https://github.com/stigmee/gdnative-cef/blob/master/gdcef/src/browser_io.cpp).
+**Note 1:** The keyboard/mouse event conversion from SDL2/glfw3 to CEF has to be fixed. **Update:** I have a functional keyboard for Godot/CEF but I have not yet patched this current repo for SDL and glfw3 (request me if you needed it urgently). So you can look at this [code](https://github.com/Lecrapouille/gdcef/blob/master/gdcef/src/browser_io.cpp).
 
 **Note 2:** I find the system not very reactive compared to the official cefsimple example.
 
 ## Help wanted
 
-Any pull requests and help are welcome to improve these examples :)
+While this repo shall be considered as a proove of concept for https://github.com/Lecrapouille/gdcef, pull requests and help are welcome to improve these examples :)
 You can achieve the API by adding more methods such as previous/next page, reload, zoom ... See https://github.com/oivio/BLUI
 
 ## Tested on
 
 It's working on my Linux 64-bits Debian 11 and CEF 99 downloaded at https://cef-builds.spotifycdn.com/index.html
-I know the Windows version can work quite easily but I did not have batch files.
+I know the Windows version can work quite easily but I did not made python script but you can get one [here](https://github.com/Lecrapouille/gdcef).
 The MacOS X is more complex and is not working yet.
 
 ## Some Differences
