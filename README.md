@@ -2,7 +2,7 @@
 
 CEF = Chromium Embedded Framework
 
-**This project shall be considered as proof of concept for this [project](https://github.com/Lecrapouille/gdcef)**
+**This project shall be considered as proof of concept for this final [project](https://github.com/Lecrapouille/gdcef) the code is not proper, will not be maintaind and not all mouse/keyboard callbacks are plugged!**
 
 For the GitHub project named [Stigmee](https://github.com/stigmee) using [Godot Engine](https://github.com/godotengine/godot), and particularly for its [CEF native module](https://github.com/stigmee/gdnative-cef) (under GPL license, but also forked as MIT license https://github.com/Lecrapouille/gdcef), I needed to make my hand on something simpler and therefore prototype (proof of concept) and modify the C++ CEF example named [cefsimple](https://bitbucket.org/chromiumembedded/cef/wiki/Tutorial) to replace the X11 display by either SDL2 or OpenGL Core (glew, glfw3). I tried the following GitHub repos but without success:
 - SDL2: https://github.com/gotnospirit/cef3-sdl2
@@ -22,7 +22,7 @@ the command line (you can back it up, meaning using a `std::vector` to back up `
 
 In this screenshot, you can see two browsers: one running YouTube, the second running a PDF (the projection of the mouse to the PDF plan has not been made).
 
-**Note 1:** The keyboard/mouse event conversion from SDL2/glfw3 to CEF has to be fixed. **Update:** I have a functional keyboard for Godot/CEF but I have not yet patched this current repo for SDL and glfw3 (request me if you needed it urgently). So you can look at this [code](https://github.com/Lecrapouille/gdcef/blob/master/gdcef/src/browser_io.cpp).
+**Note 1:** The keyboard/mouse event conversion from SDL2/glfw3 to CEF has to be fixed. **Update:** I have a functional keyboard for Godot/CEF but I have not yet patched this current repo for SDL and glfw3 (request me if you needed it urgently). So you can look at this [code](https://github.com/Lecrapouille/gdcef/blob/master/addons/gdcef/gdcef/src/browser_io.cpp).
 
 **Note 2:** I find the system not very reactive compared to the official cefsimple example.
 
@@ -33,9 +33,11 @@ You can achieve the API by adding more methods such as previous/next page, reloa
 
 ## Tested on
 
-It's working on my Linux 64-bits Debian 11 and CEF 99 downloaded at https://cef-builds.spotifycdn.com/index.html
-I know the Windows version can work quite easily but I did not made python script but you can get one [here](https://github.com/Lecrapouille/gdcef).
-The MacOS X is more complex and is not working yet.
+Tested with CEF 116.
+
+- Linux: it's working on my Linux 64-bits Debian 11.
+- Windows version can work quite easily but I did not translate the ./install.sh into python script but you can adapt this one on the version of this project for Godot [here](https://github.com/Lecrapouille/gdcef).
+- MacOS X is more complex and is not working yet: https://github.com/Lecrapouille/OffScreenCEF/issues/4
 
 ## Some Differences
 
@@ -68,7 +70,19 @@ Run the bash script for Linux:
 ./install.sh
 ```
 
-This script will:
+**Note:** if you want to change the CEF version. Take the desired version at https://cef-builds.spotifycdn.com/index.html You will see something similar:
+
+```
+09/01/2023 - 116.0.19+gc6a20bc+chromium-116.0.5845.141 / Chromium 116.0.5845.141
+```
+
+Now, in the install.sh script, search and replace the content of this variable: `CEF_VERSION=` by the desired CEF version:
+
+```
+CEF_VERSION="116.0.19+gc6a20bc+chromium-116.0.5845.141"
+```
+
+The install.sh script will:
 - download CEF inside the `thirdparty/` folder,
 - use the CEF CMake to compile libraries and assets,
 - copy them inside the `build/` folder,
@@ -80,7 +94,10 @@ Once done with success, you have to go inside the `build/` folder and run one of
 - `./cefsimple_opengl`
 - `./cefsimple_sdl`
 
-## Details on what the installation script is doing
+**Note:** A python version of the script can be used and adapted. This will allow to use it for Windows.
+[Here](https://github.com/Lecrapouille/gdcef).
+
+## Details on what the installation script is doing for you automatically
 
 To compile my applications, some libs and packages are needed: we have to compile them from CEF's example named `cefsimple` (OffScreenCEF/thirdparty/cef_binary/tests/cefsimple/ once downloaded). These libs and assets shall be in the same folder that the application binary (some internal configuration can change the path of some of them, but not all of them). We beware, some lib can be > 1 Gigabyte (depends on the operating system).
 

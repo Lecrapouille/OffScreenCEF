@@ -43,13 +43,17 @@ public:
                          const RectList &dirtyRects, const void* buffer,
                          int w, int h) override
     {
-        if ((m_texture == nullptr) || (w <= 0) || (h <= 0))
+        resize(w, h); // FIXME: I dunno why this avoid segfault
+        std::lock_guard<std::mutex> locker(m_mutex_texture);
+
+        if ((m_texture == nullptr) || (buffer == nullptr) || (w <= 0) || (h <= 0)) {
+            std::cerr << "OnPaint: bad texture or bad size" << std::endl;
             return ;
+        }
 
         unsigned char* texture_data = nullptr;
         int texture_pitch = 0;
 
-        std::lock_guard<std::mutex> locker(m_mutex_resize);
         SDL_LockTexture(m_texture, nullptr, (void**) &texture_data, &texture_pitch);
         memcpy(texture_data, buffer, static_cast<size_t>(w * h * 4));
         SDL_UnlockTexture(m_texture);
@@ -57,14 +61,13 @@ public:
 
     void resize(int w, int h)
     {
-        if ((w == m_width) && (h == m_height))
+        std::lock_guard<std::mutex> locker(m_mutex_texture);
+
+        if ((w == m_width) && (h == m_height)) {
             return ;
+        }
 
-        std::lock_guard<std::mutex> locker1(m_mutex_resize);
-        std::lock_guard<std::mutex> locker2(m_mutex_painting);
-
-        if (m_texture != nullptr)
-        {
+        if (m_texture != nullptr) {
             SDL_DestroyTexture(m_texture);
         }
 
@@ -77,9 +80,10 @@ public:
 
     void render()
     {
+        std::lock_guard<std::mutex> locker(m_mutex_texture);
+
         if (m_texture != nullptr)
         {
-            std::lock_guard<std::mutex> locker(m_mutex_painting);
             SDL_RenderCopy(&m_renderer, m_texture, nullptr, nullptr);
         }
     }
@@ -87,11 +91,10 @@ public:
 private:
 
     SDL_Renderer& m_renderer;
+    SDL_Texture* m_texture = nullptr;
+    std::mutex m_mutex_texture;
     int m_width = 0;
     int m_height = 0;
-    SDL_Texture* m_texture = nullptr;
-    std::mutex m_mutex_resize;
-    std::mutex m_mutex_painting;
 
     IMPLEMENT_REFCOUNTING(RenderHandler);
 };
@@ -364,11 +367,9 @@ int main(int argc, char * argv[])
                     switch (e.window.event)
                     {
                     case SDL_WINDOWEVENT_SIZE_CHANGED:
-                        {
-                            renderHandler->resize(e.window.data1, e.window.data2);
-                            browser->GetHost()->WasResized();
-                            break;
-                        }
+                        renderHandler->resize(e.window.data1, e.window.data2);
+                        browser->GetHost()->WasResized();
+                        break;
 
                     case SDL_WINDOWEVENT_FOCUS_GAINED:
                         browser->GetHost()->SetFocus(true);

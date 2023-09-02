@@ -4,6 +4,8 @@
 #ifndef BROWSERVIEW_HPP
 #  define BROWSERVIEW_HPP
 
+#  include <iostream>
+
 // OpenGL
 #  include <GL/glew.h>
 #  include <GLFW/glfw3.h>
@@ -20,7 +22,6 @@
 #  include <string>
 #  include <vector>
 #  include <memory>
-#  include <iostream>
 #  include <algorithm>
 
 // ****************************************************************************

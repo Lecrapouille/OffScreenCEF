@@ -1,6 +1,11 @@
+// This code is a modification of the original projects that can be found at
+// https://github.com/ashea-code/BluBrowser here quick and dirty modified to
+// make things worked with SDL.
+
 #include <stdio.h>
 #include <iostream>
 #include <sstream>
+#include <mutex>
 
 #include <cef_app.h>
 #include <cef_browser.h>
@@ -29,7 +34,8 @@ public:
     virtual void OnBeforeCommandLineProcessing(
         const CefString& ProcessType,
         CefRefPtr<CefCommandLine> CommandLine) override
-    {
+    { // FIXME LeCrapouille: does not this way!
+
         /**
          * Used to pick command line switches
          * If set to "true": CEF will use less CPU, but rendering performance will be lower. CSS3 and WebGL are not be usable
@@ -89,11 +95,9 @@ class RenderHandler: public CefRenderHandler
 public:
 
     RenderHandler(SDL_Renderer& renderer, int w, int h)
-        : m_width(w), m_height(h), m_renderer(&renderer)
+        : m_renderer(renderer)
     {
-        m_texture = SDL_CreateTexture(m_renderer, SDL_PIXELFORMAT_UNKNOWN,
-                                      SDL_TEXTUREACCESS_STREAMING, w, h);
-        assert(m_texture != nullptr);
+        resize(w, h);
     }
 
     ~RenderHandler()
@@ -102,7 +106,6 @@ public:
         {
             SDL_DestroyTexture(m_texture);
         }
-        m_renderer = nullptr;
     }
 
     virtual void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) override
@@ -114,46 +117,58 @@ public:
                          const RectList& dirtyRects, const void* buffer,
                          int w, int h) override
     {
-        std::cout << "OnPaint" << std::endl;
-        if (m_texture != nullptr)
-        {
-            std::cout << "OnPaint != nullptr" << std::endl;
-            unsigned char* texture_data = nullptr;
-            int texture_pitch = 0;
+        resize(w, h); // FIXME: I dunno why this avoid segfault
+        std::lock_guard<std::mutex> locker(m_mutex_texture);
 
-            SDL_LockTexture(m_texture, 0, (void**) &texture_data, &texture_pitch);
-            memcpy(texture_data, buffer, w * h * 4);
-            SDL_UnlockTexture(m_texture);
+        if ((m_texture == nullptr) || (buffer == nullptr) || (w <= 0) || (h <= 0)) {
+            std::cerr << "OnPaint: bad texture or bad size" << std::endl;
+            return ;
         }
+
+        unsigned char* texture_data = nullptr;
+        int texture_pitch = 0;
+
+        SDL_LockTexture(m_texture, nullptr, (void**) &texture_data, &texture_pitch);
+        memcpy(texture_data, buffer, static_cast<size_t>(w * h * 4));
+        SDL_UnlockTexture(m_texture);
     }
 
     void resize(int w, int h)
     {
-        if (m_texture != nullptr)
-        {
+        std::lock_guard<std::mutex> locker(m_mutex_texture);
+
+        if ((w == m_width) && (h == m_height)) {
+            return ;
+        }
+
+        if (m_texture != nullptr) {
             SDL_DestroyTexture(m_texture);
         }
 
-        m_texture = SDL_CreateTexture(m_renderer, SDL_PIXELFORMAT_UNKNOWN,
+        m_texture = SDL_CreateTexture(&m_renderer, SDL_PIXELFORMAT_UNKNOWN,
                                       SDL_TEXTUREACCESS_STREAMING, w, h);
+        assert(m_texture != nullptr);
         m_width = w;
         m_height = h;
     }
 
     void render()
     {
-        SDL_RenderCopy(m_renderer, m_texture, nullptr, nullptr);
+        std::lock_guard<std::mutex> locker(m_mutex_texture);
+
+        if (m_texture != nullptr)
+        {
+            SDL_RenderCopy(&m_renderer, m_texture, nullptr, nullptr);
+        }
     }
-
-public: // private:
-
-    int m_width;
-    int m_height;
 
 private:
 
-    SDL_Renderer* m_renderer = nullptr;
+    SDL_Renderer& m_renderer;
     SDL_Texture* m_texture = nullptr;
+    std::mutex m_mutex_texture;
+    int m_width;
+    int m_height;
 
     IMPLEMENT_REFCOUNTING(RenderHandler);
 };
@@ -356,33 +371,28 @@ public:
     struct BluEyeSettings
     {
         float FrameRate = 60.f;
-        int32 Width = 200;
-        int32 Height = 200;
+        int32_t Width = 200;
+        int32_t Height = 200;
         bool bIsTransparent = false;
         bool bEnableWebGL = true;
         bool bAudioMuted = false;
         bool bAutoPlayEnabled = true;
     };
 
-    void init(SDL_Renderer *sdl)
+    void init(SDL_Renderer *sdl, int w, int h)
     {
+// FIXME Lecrapouille: this does not work like this !
+
         // We don't want this running in editor unless it's PIE
         // If we don't check this, CEF will spawn infinite processes with widget components
 
-        /*if (GEngine)
-          {
-          if (GEngine->IsEditor()& & !GWorld->IsPlayInEditor())
-          {
-          UE_LOG(LogBlu, Log, TEXT("Notice: not playing - Component Will Not Initialize"));
-          return;
-          }
-          }*/
-
-        if (Settings.Width <= 0 || Settings.Height <= 0)
+        if ((w <= 0) || (h <= 0))
         {
             std::cerr << "Can't initialize when Width or Height are <= 0" << std::endl;
             return;
         }
+        Settings.Width = w;
+        Settings.Height = h;
 
         //BrowserSettings.universal_access_from_file_urls = STATE_ENABLED;
         //BrowserSettings.file_access_from_file_urls = STATE_ENABLED;
@@ -413,7 +423,7 @@ public:
         ClientHandler = new BrowserClient(Renderer);
         Browser = CefBrowserHost::CreateBrowserSync(Info,
                                                     ClientHandler.get(),
-                                                    "https://github.com/cztomczak/cefpython/wiki/Panda3D",
+                                                    "https://github.com/Lecrapouille/gdcef",
                                                     BrowserSettings,
                                                     nullptr,
                                                     nullptr);
@@ -431,6 +441,27 @@ public:
 
         //Instead of manually ticking, we now tick whenever one blu eye is created
         //FIXME SpawnTickEventLoopIfNeeded();
+    }
+
+    void WasResized()
+    {
+        if (Browser) {
+           Browser->GetHost()->WasResized();
+        }
+    }
+
+    void SetFocus(bool const v)
+    {
+        if (Browser) {
+           Browser->GetHost()->SetFocus(v);
+        }
+    }
+
+    void WasHidden(bool const v)
+    {
+        if (Browser) {
+           Browser->GetHost()->WasHidden(v);
+        }
     }
 
     void CloseBrowser()
@@ -545,7 +576,7 @@ public:
         }
     }
 
-    void ResizeBrowser(const int32 NewWidth, const int32 NewHeight)
+    void ResizeBrowser(const int32_t NewWidth, const int32_t NewHeight)
     {
         assert(Renderer != nullptr);
         assert(Browser != nullptr);
@@ -619,7 +650,7 @@ int main(int argc, char * argv[])
     int width = 800;
     int height = 600;
 
-    auto window = SDL_CreateWindow("Render CEF with SDL", SDL_WINDOWPOS_UNDEFINED,
+    auto window = SDL_CreateWindow("Render CEF with SDL with secondry process", SDL_WINDOWPOS_UNDEFINED,
                                    SDL_WINDOWPOS_UNDEFINED, width, height,
                                    SDL_WINDOW_RESIZABLE);
     if (window == nullptr)
@@ -643,7 +674,7 @@ int main(int argc, char * argv[])
 
     SDL_Event e;
     BrowserView browser_client;
-    browser_client.init(sdl_renderer);
+    browser_client.init(sdl_renderer, width, height);
 
     bool shutdown = false;
     while (!browser_client.closeAllowed())
@@ -662,28 +693,28 @@ int main(int argc, char * argv[])
                 {
                 case SDL_WINDOWEVENT_SIZE_CHANGED:
                     browser_client.ResizeBrowser(e.window.data1, e.window.data2);
+                    browser_client.WasResized();
                     break;
-#if 0
+
                 case SDL_WINDOWEVENT_FOCUS_GAINED:
-                    browser->GetHost()->SetFocus(true);
+                    browser_client.ResizeBrowser(e.window.data1, e.window.data2);
                     break;
 
                 case SDL_WINDOWEVENT_FOCUS_LOST:
-                    browser->GetHost()->SetFocus(false);
+                    browser_client.SetFocus(false);
                     break;
 
                 case SDL_WINDOWEVENT_HIDDEN:
                 case SDL_WINDOWEVENT_MINIMIZED:
                     // browser->GetHost()->SetWindowVisibility(false);
-                    browser->GetHost()->WasHidden(true);
+                    browser_client.WasHidden(true);
                     break;
 
                 case SDL_WINDOWEVENT_SHOWN:
                 case SDL_WINDOWEVENT_RESTORED:
-                    //browser->GetHost()->SetWindowVisibility(true);
-                    browser->GetHost()->WasHidden(false);
+                    browser_client.WasHidden(false);
                     break;
-#endif
+
                 case SDL_WINDOWEVENT_CLOSE:
                     e.type = SDL_QUIT;
                     SDL_PushEvent(&e);

@@ -1,5 +1,7 @@
 #!/bin/bash -e
 ### Download CEF, compile it, install locally assets and compile examples.
+### https://cef-builds.spotifycdn.com/index.html
+CEF_VERSION=116.0.19+gc6a20bc+chromium-116.0.5845.141
 
 ### Green color message
 function msg
@@ -76,15 +78,28 @@ else
     NPROC=`nproc`
 fi
 
+### https://unix.stackexchange.com/questions/159253/decoding-url-encoding-percent-encoding
+function urlencode
+{
+    local length="${#1}"
+    for (( i = 0; i < length; i++ )); do
+        local c="${1:i:1}"
+        case $c in
+            [a-zA-Z0-9.~_-]) printf "$c" ;;
+            *) printf '%%%02X' "'$c" ;;
+        esac
+    done
+}
+
 ### Compile CEF in debug or release mode ... up to you !
 #CEF_TARGET=Release
 CEF_TARGET=Debug
 
-###
-WEBSITE=https://cef-builds.spotifycdn.com
-CEF_TARBALL=cef_binary_99.2.12%2Bg2977b3a%2Bchromium-99.0.4844.74_$ARCHI.tar.bz2
+### Download CEF
 if [ ! -d "$THIRDPARTY_PATH/cef_binary" ]; then
-    msg "Downloading Chromium Embedded Framework v96 for archi $ARCHI to $CEF_PATH ..."
+    WEBSITE=https://cef-builds.spotifycdn.com
+    CEF_TARBALL=`urlencode "cef_binary_${CEF_VERSION}_${ARCHI}.tar.bz2"`
+    msg "Downloading Chromium Embedded Framework $CEF_VERSION for archi $ARCHI in $CEF_PATH ..."
     mkdir -p $THIRDPARTY_PATH
     (cd $THIRDPARTY_PATH
      wget -c $WEBSITE/$CEF_TARBALL -O- | tar -xj
@@ -92,7 +107,7 @@ if [ ! -d "$THIRDPARTY_PATH/cef_binary" ]; then
     )
 fi
 
-###
+### Compile CEF
 if [ ! -e "$BUILD_PATH/libcef.so" ]; then
     msg "Compiling Chromium Embedded Framework in $CEF_TARGET mode (inside $CEF_PATH) ..."
     mkdir -p $CEF_PATH/build
@@ -113,9 +128,9 @@ if [ ! -e "$BUILD_PATH/libcef.so" ]; then
     cp --verbose -R "$S/"*.pak "$S/"*.so* "$S/locales" $BUILD_PATH
 fi
 
-###
-if  [ ! -e "$BUILD_PATH/cefsimple_opengl" ]; then
-    msg "Compile OpenGL example"
+### Compile OpenGL demo
+#if  [ ! -e "$BUILD_PATH/cefsimple_opengl" ]; then
+    msg "Compile OpenGL demo"
     (cd cefsimple_opengl
      g++ --std=c++14 -W -Wall -Wextra -Wno-unused-parameter \
          -DCHECK_OPENGL -DCEF_USE_SANDBOX -DNDEBUG \
@@ -126,11 +141,11 @@ if  [ ! -e "$BUILD_PATH/cefsimple_opengl" ]; then
          `pkg-config --cflags --libs glew --static glfw3`
      cp --verbose -R shaders $BUILD_PATH
     )
-fi
+#fi
 
-###
-if  [ ! -e "$BUILD_PATH/cefsimple_sdl" ]; then
-    msg "Compile SDL2 example"
+### Compile SDL2 demo
+#if  [ ! -e "$BUILD_PATH/cefsimple_sdl" ]; then
+    msg "Compile SDL2 demo"
     (cd cefsimple_sdl
      g++ --std=c++14 -W -Wall -Wextra -Wno-unused-parameter \
          -DCEF_USE_SANDBOX -DNDEBUG -D_FILE_OFFSET_BITS=64 \
@@ -140,10 +155,10 @@ if  [ ! -e "$BUILD_PATH/cefsimple_sdl" ]; then
          $CEF_PATH/build/libcef_dll_wrapper/libcef_dll_wrapper.a \
          `pkg-config --cflags --libs sdl2 SDL2_image`
     )
-fi
+#fi
 
-###
-if  [ ! -e "$BUILD_PATH/primary_process" ]; then
+### Compile primary process demo
+#if  [ ! -e "$BUILD_PATH/primary_process" ]; then
     msg "Compile Primary process example"
     (cd cefsimple_separate/primary/
      g++ --std=c++14 -W -Wall -Wextra -Wno-unused-parameter \
@@ -155,10 +170,10 @@ if  [ ! -e "$BUILD_PATH/primary_process" ]; then
          $CEF_PATH/build/libcef_dll_wrapper/libcef_dll_wrapper.a \
          `pkg-config --cflags --libs sdl2 SDL2_image`
     )
-fi
+#fi
 
-###
-if  [ ! -e "$BUILD_PATH/secondary_process" ]; then
+### Compile secondary process demo
+#if  [ ! -e "$BUILD_PATH/secondary_process" ]; then
     msg "Compile Secondary process example"
     (cd cefsimple_separate/secondary
      g++ --std=c++14 -W -Wall -Wextra -Wno-unused-parameter -DCEF_USE_SANDBOX \
@@ -167,8 +182,9 @@ if  [ ! -e "$BUILD_PATH/secondary_process" ]; then
          *.cpp -o $BUILD_PATH/secondary_process $BUILD_PATH/libcef.so \
          $CEF_PATH/build/libcef_dll_wrapper/libcef_dll_wrapper.a
     )
-fi
+#fi
 
+### Outro message
 msg "Compilation done with success! Be sure to be inside $BUILD_PATH and run one of the following applications:"
 msg "  ./secondary_process"
 msg "  ./primary_process"

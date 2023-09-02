@@ -75,9 +75,9 @@ typedef struct Modifiers
         }
     }
 
-    uint32 getCode()
+    uint32_t getCode()
     {
-        uint32 modifiersCode = 0;
+        uint32_t modifiersCode = 0;
         if (shift)
         {
             modifiersCode += EVENTFLAG_SHIFT_DOWN;
@@ -112,9 +112,9 @@ typedef struct KeyCodes
     {
     }
 
-    char16 getChar16()
+    char16_t getChar16()
     {
-        return static_cast<char16>(char_code);
+        return static_cast<char16_t>(char_code);
     }
 } KeyCodes;
 
