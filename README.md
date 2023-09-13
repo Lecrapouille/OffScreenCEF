@@ -2,7 +2,7 @@
 
 CEF = Chromium Embedded Framework
 
-**This project shall be considered as proof of concept for this final [project](https://github.com/Lecrapouille/gdcef) the code is not proper, will not be maintaind and not all mouse/keyboard callbacks are plugged!**
+**This project shall be considered as proof of concept for this final [project](https://github.com/Lecrapouille/gdcef) the code is not proper, will not be maintained and not all mouse/keyboard callbacks are plugged!**
 
 For the GitHub project named [Stigmee](https://github.com/stigmee) using [Godot Engine](https://github.com/godotengine/godot), and particularly for its [CEF native module](https://github.com/stigmee/gdnative-cef) (under GPL license, but also forked as MIT license https://github.com/Lecrapouille/gdcef), I needed to make my hand on something simpler and therefore prototype (proof of concept) and modify the C++ CEF example named [cefsimple](https://bitbucket.org/chromiumembedded/cef/wiki/Tutorial) to replace the X11 display by either SDL2 or OpenGL Core (glew, glfw3). I tried the following GitHub repos but without success:
 - SDL2: https://github.com/gotnospirit/cef3-sdl2
@@ -10,41 +10,44 @@ For the GitHub project named [Stigmee](https://github.com/stigmee) using [Godot 
 - OpenGL Core: https://github.com/if1live/cef-gl-example
 - OpenGL Core: https://github.com/andmcgregor/cefgui
 
-They are outdated (more than > 4 years), the CEF API changed, and when I compiled they crash by forking indefinitely the application until my Linux fell down. So they are not safe to be used! When starting, CEF will create several forks and needs to access the command line (`main(int argc, char* argv[])`) to give commands to the child process. From memory, issues of these repos come from the fact that the CEF API has evolved, and the command line access has been broken and as consequence, CEF is forking forever. In this repo is the updated version of these repos. They are inside the following folders:
+They are outdated (more than > 4 years), the CEF API changed, and when I compiled they crashed by forking indefinitely the application until my Linux fell down. So they are not safe to use! When starting, CEF will create several forks and needs to access the command line (`main(int argc, char* argv[])`) to give commands to the child process. From memory, issues of these repos come from the fact that the CEF API has evolved, and the command line access has been broken and as a consequence, CEF is forking forever. In this repo is the updated version of these repos. They are inside the following folders:
 - cefsimple_sdl: using SDL2.
 - cefsimple_opengl: using OpenGL Core (>= 3.3).
-- cefsimple_separate: with two separated processes. Two processes are needed when CEF cannot directly access the `main(int argc, char* argv[])` function of your application. You have to know that CEF modifies the content of your `argv` and this may mess up your application if it also parses
-the command line (you can back it up, meaning using a `std::vector` to back up `argv` and after CEF init to restore values in `argv`). What is "two separated process" exactly ? Just an extra fork: the main process forks itself and call the secondary process, which can fully access to its own `main(int argc, char* argv[])`. The main constrain is the path of the secondary process shall be **canonic** (and this is a pain to get the real path). Do we really require two separated process ? See CEF for Unreal Engine: https://github.com/oivio/BLUI calling https://github.com/ashea-code/BluBrowser.
+- cefsimple_separate: with two separate processes. Two processes are needed when CEF cannot directly access the `main(int argc, char* argv[])` function of your application. You have to know that CEF modifies the content of your `argv` and this may mess up your application if it also parses the command line (you can back it up, meaning using a `std::vector` to back up `argv` and after CEF init to restore values in `argv`).
+
+What is "two separated processes" exactly? Just an extra fork: the main process forks itself and calls the secondary process, which can fully access its own `main(int argc, char* argv[])`. The main constraint is the path of the secondary process shall be **canonic** (and this is a pain to get the real path). Do we really require two separate processes? Yes for applications that access to `main(int argc, char* argv[])` since CEF also uses it or for applications such as game engines (Godot, Unreal, Unity ...) where you cannot modify their `main(int argc, char* argv[])` code source to add your CEF code. See CEF:
+- for Unreal Engine: https://github.com/oivio/BLUI calling https://github.com/ashea-code/BluBrowser.
+- for Godot: https://github.com/Lecrapouille/gdcef/tree/master/addons/gdcef/gdcef calling https://github.com/Lecrapouille/gdcef/tree/master/addons/gdcef/subprocess
 
 [![OpenGL version](doc/screenshot.png)](https://youtu.be/8xhxiDI4D5o)
 
-*Fig 1 - The OpenGL version. Click on the image to see the youtube video of the demo.*
+*Fig 1 - The OpenGL version. Click on the image to see the YouTube video of the demo.*
 
-In this screenshot, you can see two browsers: one running YouTube, the second running a PDF (the projection of the mouse to the PDF plan has not been made).
+In this screenshot, you can see two browsers: one running YouTube, and the second running a PDF. The projection of the mouse to the PDF plan has not been made. You can find [here](https://github.com/Lecrapouille/gdcef/tree/master/addons/gdcef/demos/3D) how to make it.
 
 **Note 1:** The keyboard/mouse event conversion from SDL2/glfw3 to CEF has to be fixed. **Update:** I have a functional keyboard for Godot/CEF but I have not yet patched this current repo for SDL and glfw3 (request me if you needed it urgently). So you can look at this [code](https://github.com/Lecrapouille/gdcef/blob/master/addons/gdcef/gdcef/src/browser_io.cpp).
 
 **Note 2:** I find the system not very reactive compared to the official cefsimple example.
 
-## Help wanted
+## Help Wanted
 
-While this repo shall be considered as a proove of concept for https://github.com/Lecrapouille/gdcef, pull requests and help are welcome to improve these examples :)
-You can achieve the API by adding more methods such as previous/next page, reload, zoom ... See https://github.com/oivio/BLUI
+While this repo shall be considered as a proof of concept for https://github.com/Lecrapouille/gdcef, pull requests and help are welcome to improve these examples :)
+You can achieve the API by adding more methods such as previous/next page, reload, and zoom ... See https://github.com/oivio/BLUI
 
 ## Tested on
 
 Tested with CEF 116.
 
-- Linux: it's working on my Linux 64-bits Debian 11.
-- Windows version can work quite easily but I did not translate the ./install.sh into python script but you can adapt this one on the version of this project for Godot [here](https://github.com/Lecrapouille/gdcef).
-- MacOS X is more complex and is not working yet: https://github.com/Lecrapouille/OffScreenCEF/issues/4
+- Linux: It's working on my Linux 64-bit Debian 11.
+- Windows: version can work quite easily but I did not translate the ./install.sh into Python script, but you can adapt this one on the version of this project for Godot [here](https://github.com/Lecrapouille/gdcef).
+- MacOS X: is more complex and is not working yet: https://github.com/Lecrapouille/OffScreenCEF/issues/4
 
 ## Some Differences
 
-- Note: all these codes are quick and dirty since I needed to check how to make CEF running with OpenGL or SDL2 before switching to Godot Engine.
+- Note: All these codes are quick and dirty since I needed to check how to make CEF run with OpenGL or SDL2 before switching to Godot Engine.
 - `cefsimple_sdl` is a single main file, while cefsimple_opengl has been split into several files.
 - `cefsimple_sdl` is using more handlers such as `CefLifeSpanHandler`. cefsimple_opengl does not.
-- `cefsimple_opengl` is using many viewports. cefsimple_sdl not. Viewport allows to place the web page where you want on the screen (in the screenshot, you can see two browsers: one running YouTube, the second running a PDF).
+- `cefsimple_opengl` is using many viewports. cefsimple_sdl not. Viewport allows you to place the web page where you want on the screen (in the screenshot, you can see two browsers: one running YouTube, the second running a PDF).
 - `CefExecuteProcess` shall be called before OpenGL/SDL2 context and using the command line
 of your application (`int argc, char* argv[]`). If not, your system can freeze. Here is the
 function documentation (`caf_app.h` file):
@@ -61,32 +64,32 @@ function documentation (`caf_app.h` file):
    |windows_sandbox_info| parameter is only used on Windows and may be NULL (see
    cef_sandbox_win.h for details).
 ```
-- In `cefsimple_sdl` and `cefsimple_opengl`, both programs can access to the `main(int argc, char* argv[])` function and therefore access to the command line. CEF; when forking; modifies the command lines to give behaviors to forked child. Sometimes, accessing to the main function is not possible (or when your application is also using the command line, while possible to save and restore it before and after calling CEF). Therefore, you shall launch a second process which can access its main function and therefore call chromium. As consequence, `cefsimple_separate` has been added when you cannot modify the main application to access to the `int main(int argc, char* argv[])` function.
+- In `cefsimple_sdl` and `cefsimple_opengl`, both programs can access the `main(int argc, char* argv[])` function and therefore access the command line. CEF; when forking; modifies the command lines to give behaviors to the forked child. Sometimes, accessing the main function is not possible (or when your application is also using the command line, while possible to save and restore it before and after calling CEF). Therefore, you shall launch a second process that can access its main function and therefore call chromium. As a consequence, `cefsimple_separate` has been added when you cannot modify the main application to access the `int main(int argc, char* argv[])` function.
 
-## How to compile this project ?
+## How to compile this project?
 
 Run the bash script for Linux:
 ```
 ./install.sh
 ```
 
-**Note:** if you want to change the CEF version. Take the desired version at https://cef-builds.spotifycdn.com/index.html You will see something similar:
+**Note:** If you want to change the CEF version. Take the desired version at https://cef-builds.spotifycdn.com/index.html You will see something similar:
 
 ```
 09/01/2023 - 116.0.19+gc6a20bc+chromium-116.0.5845.141 / Chromium 116.0.5845.141
 ```
 
-Now, in the install.sh script, search and replace the content of this variable: `CEF_VERSION=` by the desired CEF version:
+Now, in the install.sh script, search and replace the content of this variable: `CEF_VERSION=` with the desired CEF version:
 
 ```
 CEF_VERSION="116.0.19+gc6a20bc+chromium-116.0.5845.141"
 ```
 
 The install.sh script will:
-- download CEF inside the `thirdparty/` folder,
-- use the CEF CMake to compile libraries and assets,
-- copy them inside the `build/` folder,
-- and compile my applications into the `build/` folder.
+- Download CEF inside the `thirdparty/` folder.
+- Use the CEF CMake to compile libraries and assets,
+- Copy them inside the `build/` folder,
+- Compile my applications into the `build/` folder.
 
 Once done with success, you have to go inside the `build/` folder and run one of the following applications:
 - `./secondary_process`
@@ -94,16 +97,16 @@ Once done with success, you have to go inside the `build/` folder and run one of
 - `./cefsimple_opengl`
 - `./cefsimple_sdl`
 
-**Note:** A python version of the script can be used and adapted. This will allow to use it for Windows.
+**Note:** A Python version of the script can be used and adapted. This will allow us to use it for Windows.
 [Here](https://github.com/Lecrapouille/gdcef).
 
 ## Details on what the installation script is doing for you automatically
 
-To compile my applications, some libs and packages are needed: we have to compile them from CEF's example named `cefsimple` (OffScreenCEF/thirdparty/cef_binary/tests/cefsimple/ once downloaded). These libs and assets shall be in the same folder that the application binary (some internal configuration can change the path of some of them, but not all of them). We beware, some lib can be > 1 Gigabyte (depends on the operating system).
+To compile my applications, some libs and packages are needed: we have to compile them from CEF's example named `cefsimple` (OffScreenCEF/thirdparty/cef_binary/tests/cefsimple/ once downloaded). These libs and assets shall be in the same folder as the application binary (some internal configurations can change the path of some of them, but not all of them). We beware, some lib can be > 1 Gigabyte (depending on the operating system).
 
-Here what the script is doing, but we will explain it manually.
+Here is what the script is doing, but we will explain it manually.
 
-Firstly, let name some folders. This will shorter code in this document. Adapt the CEF version to your operating system with the desired version according to https://cef-builds.spotifycdn.com/index.html
+Firstly, let's name some folders. This will shorten the code in this document. Adapt the CEF version to your operating system with the desired version according to https://cef-builds.spotifycdn.com/index.html
 
 ```bash
 TMP=/tmp
@@ -120,7 +123,7 @@ Download and decompress it inside a temporary folder:
 wget -c $CEF_LINK -O- | tar -xj
 ```
 
-Git clone this repo inside the cef folder:
+Git clone this repo inside the CEF folder:
 
 ```bash
 cd $CEF
@@ -149,27 +152,27 @@ mkdir -p $CEFSIMPLE_SDL/locales
 cp -v $CEF/build/tests/cefsimple/Debug/locales/en-US.pak $CEFSIMPLE_SDL/locales
 ```
 
-Do the same thing for `$CEFSIMPLE_GL`. See the screenshot for needed assets (note this screenshot is old: in latest version of
+Do the same thing for `$CEFSIMPLE_GL`. See the screenshot for needed assets (note this screenshot is old: in the latest version of
 this repo all assets and libs are no longer inside the code source but inside the `build/` folder with the binary of applications):
 
 ![Needed assets](doc/assets.png)
 
 *Fig 2 - Needed assets from CEF.*
 
-CEF needs all its assets next to it. Some paths can be configured. See OffScreenCEF/thirdparty/cef_binary/include/internal/cef_types.h for more information (once CEF downloaded by the install.sh script).
+CEF needs all its assets next to it. Some paths can be configured. See OffScreenCEF/thirdparty/cef_binary/include/internal/cef_types.h for more information (once CEF has been downloaded by the install.sh script).
 
-## How CEF works ?
+## How CEF works?
 
-The documentation of CEF is not really beginner friendly:
+The documentation of CEF is not really beginner-friendly:
 https://bitbucket.org/chromiumembedded/cef/wiki/GeneralUsage.md
 
-You will have access to `int main(int argc, char * argv[])` else you will to deal with two separated process.
+You will have access to `int main(int argc, char * argv[])` you will have to deal with two separate processes.
 If you can access to `int main(int argc, char * argv[])`:
 
 ```
 int main(int argc, char * argv[])
 {
-    // Start CEF by forking this current application. The access to argc, argv is mandatory
+    // Start CEF by forking this current application. Access to argc, argv is mandatory
     // to allow passing information to forked CEF processes.
     CefMainArgs args(argc, argv);
     int result = CefExecuteProcess(args, nullptr, nullptr);
@@ -207,7 +210,7 @@ class RenderHandler: public CefRenderHandler { ...
 ```
 
 Two important methods to override from `CefRenderHandler`:
-- The `GetViewRect` that will get the region of your texture/windows and inform CEF. For a full page:
+- The `GetViewRect` will get the region of your texture/windows and inform CEF. For a full page:
 
 ```
 virtual void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) override
@@ -242,9 +245,9 @@ for (int i = 0; i < TEXTURE_SIZE; i += COLOR_CHANELS)
 }
 ```
 
-The `dirtyRects` contains a list dirty region to refresh. This avoids repainting the entire texture.
+The `dirtyRects` contains a list of dirty regions to refresh. This avoids repainting the entire texture.
 
-In a general way, you can derive some CEF classes to override some of their methods to react to events such as a browser is created, closed, page loaded ...
+In a general way, you can derive some CEF classes to override some of their methods to react to events such as a browser is created, closed, or page loaded ...
 
 ```
 class BrowserClient: public CefRenderHandler,
@@ -258,7 +261,7 @@ class BrowserClient: public CefRenderHandler,
     private: // CefClient::CefBaseRefCounted interfaces
 
         // ---------------------------------------------------------------------
-        //! \brief CEF reference couting
+        //! \brief CEF reference counting
         // ---------------------------------------------------------------------
         IMPLEMENT_REFCOUNTING(BrowserClient);
 
@@ -283,7 +286,7 @@ class BrowserClient: public CefRenderHandler,
     private: // CefRenderHandler interfaces
 
         // ---------------------------------------------------------------------
-        //! \brief Get the view port.
+        //! \brief Get the viewport.
         // ---------------------------------------------------------------------
         virtual void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) override
         {
@@ -317,7 +320,7 @@ class BrowserClient: public CefRenderHandler,
         //! value will never be empty -- call the IsMain() method to check if
         //! this frame is the main frame. Multiple frames may be loading at the
         //! same time. Sub-frames may start or continue loading after the main
-        //! frame load has ended. This method will not be called for same page
+        //! frame load has ended. This method will not be called for the same page
         //! navigations (fragments, history state, etc.) or for navigations that
         //! fail or are canceled before commit. For notification of overall
         //! browser load status use OnLoadingStateChange instead.
@@ -344,7 +347,7 @@ virtual CefRefPtr<CefXXXHandler> GetXXXHandler() override
 Since `CefClient` derives from `CefBaseRefCounted` you will also have to define
 reference counting interfaces by adding `IMPLEMENT_REFCOUNTING(BrowserClient);`
 
-To create of a browser, the following code is needed:
+To create a browser, the following code is needed:
 
 ```
 CefBrowserSettings browserSettings;
@@ -362,7 +365,7 @@ browser = CefBrowserHost::CreateBrowserSync(
             nullptr, nullptr);
 ```
 
-CEF needs to be feed with mouse position, keyboard pressed, window reshaped ...
+CEF needs to be fed with mouse position, keyboard pressed, window reshaped ...
 For example, for the mouse:
 
 ```
@@ -378,3 +381,4 @@ m_browser->GetHost()->SendMouseMoveEvent(evt, mouse_leave);
 - For C++/Qt: https://github.com/CefView/CefViewCore
 - For C++/Python: https://github.com/cztomczak/cefpython
 - For C#/Unity: https://github.com/Voltstro-Studios/UnityWebBrowser
+
