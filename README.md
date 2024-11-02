@@ -377,6 +377,7 @@ m_browser->GetHost()->SendMouseMoveEvent(evt, mouse_leave);
 
 ## Other projects
 
+- CppCon19: Embrace Modern Technology: Using HTML 5 for GUI in C++ - Borislav Stanimirov. GitHub: https://github.com/iboB/html5-gui-demo Youtube video: https://www.youtube.com/watch?v=bbbcZd4cuxg
 - For Godot: https://github.com/stigmee/gdnative-cef
 - For C++/Qt: https://github.com/CefView/CefViewCore
 - For C++/Python: https://github.com/cztomczak/cefpython
